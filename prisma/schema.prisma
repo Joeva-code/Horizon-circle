@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String   @id @default(uuid())
+
+  email                 String   @unique
+
+  password              String?
+
+  firstName             String?
+  lastName              String?
+
+  role                  Role     @default(PLANNER)
+
+  provider              String   @default("LOCAL")
+  providerId            String?
+  avatar                String?
+
+  isVerified            Boolean  @default(false)
+  isActive              Boolean  @default(true)
+
+  lastLogin             DateTime?
+
+  passwordResetToken    String?
+  passwordResetExpires  DateTime?
+  emailVerificationToken   String?
+  emailVerificationExpires DateTime?
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  vendorProfile VendorProfile?
+
+  sentEnquiries      Enquiry[] @relation("SentEnquiries")
+  receivedEnquiries  Enquiry[] @relation("ReceivedEnquiries")
+  reviews            Review[] @relation("PlannerReviews")
+  vendorReviews      Review[] @relation("VendorReviews")
+  refreshTokens      RefreshToken[]
+
+  @@unique([provider, providerId])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model VendorProfile {
+  id                String          @id @default(uuid())
+  userId            String          @unique
+  businessName      String
+  category          String
+  description       String?
+  location          String
+  priceRange        String?
+  availability      Json?           @default("{}")
+  profileImage      String?
+  portfolioImages   String[]        @default([])
+  isPublished       Boolean         @default(false)
+  responseRate      Decimal?        @default(0)
+  responseTime      Int?            @default(0)
+  totalEnquiries    Int?            @default(0)
+  totalBookings     Int?            @default(0)
+  averageRating     Decimal?        @default(0)
+  totalReviews      Int?            @default(0)
+  viewCount         Int?            @default(0)
+  enquiryCount      Int?            @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enquiries         Enquiry[]
+  reviews           Review[]
+
+  @@map("vendor_profiles")
+}
+
+model Enquiry {
+  id                String          @id @default(uuid())
+  plannerId         String
+  vendorId          String
+  vendorProfileId   String
+  eventType         String
+  eventDate         DateTime
+  eventLocation     String
+  guestCount        Int?
+  budget            Decimal?
+  specialNotes      String?
+  status            EnquiryStatus   @default(NEW)
+  responseMessage   String?
+  respondedAt       DateTime?
+  bookedAt          DateTime?
+  isDuplicate       Boolean         @default(false)
+  originalEnquiryId String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  planner           User            @relation("SentEnquiries", fields: [plannerId], references: [id])
+  vendor            User            @relation("ReceivedEnquiries", fields: [vendorId], references: [id])
+  vendorProfile     VendorProfile   @relation(fields: [vendorProfileId], references: [id])
+  originalEnquiry   Enquiry?        @relation("OriginalEnquiry", fields: [originalEnquiryId], references: [id])
+  duplicateEnquiries Enquiry[]      @relation("OriginalEnquiry")
+  review            Review?
+
+  @@unique([plannerId, vendorId, eventType, eventDate], map: "enquiries_plannerId_vendorId_eventType_eventDate_key")
+  @@map("enquiries")
+}
+
+model Review {
+  id                String          @id @default(uuid())
+  enquiryId         String          @unique
+  plannerId         String
+  vendorId          String
+  vendorProfileId   String
+  rating            Int
+  review            String
+  isEdited          Boolean         @default(false)
+  editedAt          DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  enquiry           Enquiry         @relation(fields: [enquiryId], references: [id])
+  planner           User            @relation("PlannerReviews", fields: [plannerId], references: [id])
+  vendor            User            @relation("VendorReviews", fields: [vendorId], references: [id])
+  vendorProfile     VendorProfile   @relation(fields: [vendorProfileId], references: [id])
+
+  @@map("reviews")
+}
+
+enum Role {
+  PLANNER
+  VENDOR
+}
+
+enum EnquiryStatus {
+  NEW
+  RESPONDED
+  BOOKED
+}
