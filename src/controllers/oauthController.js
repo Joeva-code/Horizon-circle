@@ -1,31 +1,27 @@
 import { OAuth2Client } from "google-auth-library";
-import jwt from "jsonwebtoken";
 import { prisma } from "../config/database.js";
 import { issueTokenPair, setRefreshCookie, toPublicUser } from '../services/authService.js';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-const generateToken = (user) => {
-  return jwt.sign(
-    {
-      id: user.id,
-      role: user.role
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: process.env.JWT_EXPIRE || "7d"
-    }
-  );
-};
-
 export const googleLogin = async (req, res) => {
   try {
-    const { token } = req.body;
+    const { token, role } = req.body;
 
     if (!token) {
       return res.status(400).json({
         success: false,
         message: "Google token is required"
+      });
+    }
+
+    // The role is selected during first-time sign-up only. Never allow a
+    // Google login to change the role of an existing account.
+    const requestedRole = role ?? 'PLANNER';
+    if (!['PLANNER', 'VENDOR'].includes(requestedRole)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Role must be PLANNER or VENDOR'
       });
     }
 
@@ -59,16 +55,33 @@ export const googleLogin = async (req, res) => {
     });
 
     if (!user) {
-      user = await prisma.user.create({
-        data: {
-          email,
-          firstName: given_name,
-          lastName: family_name,
-          avatar: picture,
-          provider: "GOOGLE",
-          providerId: sub,
-          isVerified: true
+      user = await prisma.$transaction(async (tx) => {
+        const newUser = await tx.user.create({
+          data: {
+            email,
+            firstName: given_name,
+            lastName: family_name,
+            avatar: picture,
+            role: requestedRole,
+            provider: "GOOGLE",
+            providerId: sub,
+            isVerified: true
+          }
+        });
+
+        if (requestedRole === 'VENDOR') {
+          await tx.vendorProfile.create({
+            data: {
+              userId: newUser.id,
+              businessName: '',
+              category: '',
+              location: '',
+              isPublished: false
+            }
+          });
         }
+
+        return newUser;
       });
     }
 
@@ -79,8 +92,6 @@ export const googleLogin = async (req, res) => {
       data: {
         lastLogin: new Date(),
         isVerified: true,
-        provider: "GOOGLE",
-        providerId: sub,
         avatar: user.avatar || picture
       }
     });

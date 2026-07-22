@@ -19,7 +19,7 @@ const app = express();
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW) * 60 * 1000 || 15 * 60 * 1000,
+  windowMs: (parseInt(process.env.RATE_LIMIT_WINDOW) || 15) * 60 * 1000,
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
   message: {
     success: false,
@@ -29,25 +29,46 @@ const limiter = rateLimit({
 
 // Middleware
 app.use(helmet());
+
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   credentials: true
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Apply rate limiter to API routes
 app.use('/api', limiter);
 
-// Health check
+/**
+ * Root Route
+ */
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Welcome to the EventConnect API',
+    version: '1.0.0',
+    documentation: '/health',
+    status: 'Running'
+  });
+});
+
+/**
+ * Health Check
+ */
 app.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'EventConnect API is running',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
-// Routes
+/**
+ * API Routes
+ */
 app.use('/api/auth', authRoutes);
 app.use('/api/vendor', vendorRoutes);
 app.use('/api/search', searchRoutes);
@@ -55,7 +76,9 @@ app.use('/api/enquiries', enquiryRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/planner', plannerRoutes);
 
-// 404 handler
+/**
+ * 404 Handler
+ */
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -63,7 +86,9 @@ app.use((req, res) => {
   });
 });
 
-// Error handler
+/**
+ * Global Error Handler
+ */
 app.use(errorHandler);
 
 export default app;
