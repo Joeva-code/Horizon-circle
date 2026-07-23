@@ -8,7 +8,8 @@ const publicPlannerFields = {
   role: true,
   avatar: true,
   createdAt: true,
-  updatedAt: true
+  updatedAt: true,
+  plannerProfile: true
 };
 
 // @desc    Get the signed-in planner profile
@@ -33,18 +34,32 @@ export const getProfile = async (req, res) => {
 // @access  Private (Planner only)
 export const updateProfile = async (req, res) => {
   try {
-    const { firstName, lastName, avatar } = req.body;
+    const { firstName, lastName, avatar, phone, location, bio, preferredEventTypes } = req.body;
     const data = {};
+    const profileData = {};
 
     if (firstName !== undefined) data.firstName = firstName;
     if (lastName !== undefined) data.lastName = lastName;
     if (avatar !== undefined) data.avatar = avatar;
+    if (phone !== undefined) profileData.phone = phone;
+    if (location !== undefined) profileData.location = location;
+    if (bio !== undefined) profileData.bio = bio;
+    if (preferredEventTypes !== undefined) profileData.preferredEventTypes = preferredEventTypes;
 
-    if (Object.keys(data).length === 0) {
+    if (Object.keys(data).length === 0 && Object.keys(profileData).length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Provide at least one profile field to update'
       });
+    }
+
+    if (Object.keys(profileData).length > 0) {
+      data.plannerProfile = {
+        upsert: {
+          create: profileData,
+          update: profileData
+        }
+      };
     }
 
     const planner = await prisma.user.update({

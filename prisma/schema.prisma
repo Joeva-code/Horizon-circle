@@ -36,7 +36,8 @@ model User {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  vendorProfile VendorProfile?
+  vendorProfile  VendorProfile?
+  plannerProfile PlannerProfile?
 
   sentEnquiries      Enquiry[] @relation("SentEnquiries")
   receivedEnquiries  Enquiry[] @relation("ReceivedEnquiries")
@@ -91,6 +92,21 @@ model VendorProfile {
   reviews           Review[]
 
   @@map("vendor_profiles")
+}
+
+model PlannerProfile {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  phone               String?
+  location            String?
+  bio                 String?
+  preferredEventTypes String[] @default([])
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("planner_profiles")
 }
 
 model Enquiry {

@@ -12,7 +12,7 @@ const newEmailToken = () => crypto.randomBytes(32).toString('hex');
 // @access  Public
 export const register = async (req, res) => {
   try {
-    const { email, password, firstName, lastName, role } = req.body;
+    const { email, password, firstName, lastName, accountType } = req.body;
     ensureEmailConfigured();
 
     // Check if user exists
@@ -38,13 +38,13 @@ export const register = async (req, res) => {
         password: hashedPassword,
         firstName,
         lastName,
-        role: role || 'PLANNER',
+        role: accountType,
         emailVerificationToken: tokenHash(verificationToken),
         emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
       }
     });
 
-    // Create vendor profile if role is vendor
+    // Create the profile belonging to the selected account type.
     if (user.role === 'VENDOR') {
       await prisma.vendorProfile.create({
         data: {
@@ -54,6 +54,10 @@ export const register = async (req, res) => {
           location: '',
           isPublished: false
         }
+      });
+    } else {
+      await prisma.plannerProfile.create({
+        data: { userId: user.id }
       });
     }
 

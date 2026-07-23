@@ -23,7 +23,23 @@ export const authValidation = {
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
     body('firstName').optional().isString().trim(),
     body('lastName').optional().isString().trim(),
-    body('role').isIn(['PLANNER', 'VENDOR']).withMessage('Invalid role selected')
+    body().custom((_, { req }) => {
+      // `accountType` is the public registration field. Accept `role` too so
+      // existing clients keep working while they migrate.
+      const accountType = req.body.accountType ?? req.body.role;
+
+      if (typeof accountType !== 'string') {
+        throw new Error('Account type must be Vendor or Planner');
+      }
+
+      const normalizedAccountType = accountType.trim().toUpperCase();
+      if (!['PLANNER', 'VENDOR'].includes(normalizedAccountType)) {
+        throw new Error('Account type must be Vendor or Planner');
+      }
+
+      req.body.accountType = normalizedAccountType;
+      return true;
+    })
   ],
   login: [
     body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
@@ -74,7 +90,12 @@ export const plannerValidation = {
   updateProfile: [
     body('firstName').optional().isString().trim().isLength({ min: 1, max: 100 }).withMessage('First name must be between 1 and 100 characters'),
     body('lastName').optional().isString().trim().isLength({ min: 1, max: 100 }).withMessage('Last name must be between 1 and 100 characters'),
-    body('avatar').optional({ nullable: true }).isURL().withMessage('Avatar must be a valid URL')
+    body('avatar').optional({ nullable: true }).isURL().withMessage('Avatar must be a valid URL'),
+    body('phone').optional({ nullable: true }).isString().trim().isLength({ max: 30 }).withMessage('Phone must be at most 30 characters'),
+    body('location').optional({ nullable: true }).isString().trim().isLength({ max: 200 }).withMessage('Location must be at most 200 characters'),
+    body('bio').optional({ nullable: true }).isString().trim().isLength({ max: 2000 }).withMessage('Bio must be at most 2,000 characters'),
+    body('preferredEventTypes').optional().isArray({ max: 20 }).withMessage('Preferred event types must be an array of up to 20 items'),
+    body('preferredEventTypes.*').optional().isString().trim().isLength({ min: 1, max: 100 }).withMessage('Each preferred event type must be between 1 and 100 characters')
   ]
 };
 

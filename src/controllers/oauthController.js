@@ -6,7 +6,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const googleLogin = async (req, res) => {
   try {
-    const { token, role } = req.body;
+    const { token, accountType, role } = req.body;
 
     if (!token) {
       return res.status(400).json({
@@ -15,13 +15,18 @@ export const googleLogin = async (req, res) => {
       });
     }
 
-    // The role is selected during first-time sign-up only. Never allow a
-    // Google login to change the role of an existing account.
-    const requestedRole = role ?? 'PLANNER';
+    // `accountType` matches local registration. Keep `role` for existing
+    // clients, and normalize either value for the database enum.
+    // The selection is used only for first-time sign-up; logging in never
+    // changes an existing account's role.
+    const selectedAccountType = accountType ?? role ?? 'PLANNER';
+    const requestedRole = typeof selectedAccountType === 'string'
+      ? selectedAccountType.trim().toUpperCase()
+      : '';
     if (!['PLANNER', 'VENDOR'].includes(requestedRole)) {
       return res.status(400).json({
         success: false,
-        message: 'Role must be PLANNER or VENDOR'
+        message: 'Account type must be Vendor or Planner'
       });
     }
 
@@ -78,6 +83,10 @@ export const googleLogin = async (req, res) => {
               location: '',
               isPublished: false
             }
+          });
+        } else {
+          await tx.plannerProfile.create({
+            data: { userId: newUser.id }
           });
         }
 
