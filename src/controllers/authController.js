@@ -21,7 +21,16 @@ const isStrongPassword = (password) => (
 // @access  Public
 export const signup = async (req, res) => {
   try {
-    const { email, password, firstName, lastName, accountType } = req.body;
+    const { email, password, firstName, lastName, accountType, termsAccepted } = req.body;
+    // Keep this guard in the controller as well as the route validator so a
+    // caller cannot create an account if the handler is reused elsewhere.
+    if (termsAccepted !== true) {
+      return res.status(400).json({
+        success: false,
+        message: 'You must accept the terms and conditions before signing up'
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const verificationToken = newEmailToken();
     const user = await prisma.$transaction(async (tx) => {
