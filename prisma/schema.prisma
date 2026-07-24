@@ -25,6 +25,7 @@ model User {
 
   isVerified            Boolean  @default(false)
   isActive              Boolean  @default(true)
+  termsAcceptedAt       DateTime?
 
   lastLogin             DateTime?
 

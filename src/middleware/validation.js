@@ -25,6 +25,9 @@ export const authValidation = {
       .withMessage('Password must be at least 8 characters and include uppercase, lowercase, a number, and a special character'),
     body('firstName').optional().isString().trim(),
     body('lastName').optional().isString().trim(),
+    body('termsAccepted')
+      .custom((value) => value === true)
+      .withMessage('You must accept the terms and conditions before signing up'),
     body().custom((_, { req }) => {
       // `accountType` is the public registration field. Accept `role` too so
       // existing clients keep working while they migrate.
