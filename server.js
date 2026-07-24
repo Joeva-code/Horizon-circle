@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import app from './src/app.js';
 import { connectDB, disconnectDB } from './src/config/database.js';
+import { startEmailQueueWorker } from './src/services/emailJobService.js';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ process.on('unhandledRejection', (err) => {
 const startServer = async () => {
   try {
     await connectDB();
+    const emailQueueWorker = startEmailQueueWorker();
     
     const server = app.listen(PORT, () => {
       console.log(`🚀 EventConnect Server running on port ${PORT}`);
@@ -33,6 +35,7 @@ const startServer = async () => {
 
     // Graceful shutdown
     const shutdown = async () => {
+      clearInterval(emailQueueWorker);
       console.log('🔄 Shutting down gracefully...');
       
       server.close(async () => {
@@ -58,5 +61,3 @@ const startServer = async () => {
 };
 
 startServer();
-
-

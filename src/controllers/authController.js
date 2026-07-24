@@ -2,7 +2,8 @@ import { prisma } from '../config/database.js';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { clearRefreshCookie, getRefreshToken, issueTokenPair, revokeRefreshToken, rotateRefreshToken, setRefreshCookie, toPublicUser } from '../services/authService.js';
-import { ensureEmailConfigured, sendPasswordResetEmail, sendVerificationEmail } from '../services/emailService.js';
+import { ensureEmailConfigured, sendPasswordResetEmail } from '../services/emailService.js';
+import { enqueueVerificationEmail } from '../services/emailJobService.js';
 
 const tokenHash = (token) => crypto.createHash('sha256').update(token).digest('hex');
 const newEmailToken = () => crypto.randomBytes(32).toString('hex');
@@ -21,67 +22,35 @@ const isStrongPassword = (password) => (
 export const signup = async (req, res) => {
   try {
     const { email, password, firstName, lastName, accountType } = req.body;
-    ensureEmailConfigured();
-
-    // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
-
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'User already exists with this email'
-      });
-    }
-
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const verificationToken = newEmailToken();
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        firstName,
-        lastName,
-        role: accountType,
-        emailVerificationToken: tokenHash(verificationToken),
-        emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    const user = await prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: { email, password: hashedPassword, firstName, lastName, role: accountType, emailVerificationToken: tokenHash(verificationToken), emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) }
+      });
+      if (createdUser.role === 'VENDOR') {
+        await tx.vendorProfile.create({ data: { userId: createdUser.id, businessName: '', category: '', location: '', isPublished: false } });
+      } else {
+        await tx.plannerProfile.create({ data: { userId: createdUser.id } });
       }
+      await enqueueVerificationEmail(tx, { user: createdUser, token: verificationToken });
+      return createdUser;
     });
-
-    // Create the profile belonging to the selected account type.
-    if (user.role === 'VENDOR') {
-      await prisma.vendorProfile.create({
-        data: {
-          userId: user.id,
-          businessName: '',
-          category: '',
-          location: '',
-          isPublished: false
-        }
-      });
-    } else {
-      await prisma.plannerProfile.create({
-        data: { userId: user.id }
-      });
-    }
-
-    await sendVerificationEmail({ email: user.email, firstName: user.firstName, token: verificationToken });
 
     // Registration is intentionally not an authenticated session. The user can
     // sign in only after the verification link marks the account as verified.
     res.status(202).json({
       success: true,
-      message: 'Check your email to verify your account and complete sign up.',
+      message: 'Signup successful; check your email.',
       data: toPublicUser(user)
     });
 
   } catch (error) {
     console.error('Signup error:', error);
 
+    if (error.code === 'P2002') {
+      return res.status(400).json({ success: false, message: 'User already exists with this email' });
+    }
     res.status(error.statusCode || 500).json({
       success: false,
       message: error.message || 'Error registering user'
@@ -303,10 +272,11 @@ export const resendVerification = async (req, res) => {
     const { email } = req.body;
     const user = typeof email === 'string' ? await prisma.user.findUnique({ where: { email: email.toLowerCase() } }) : null;
     if (user && !user.isVerified) {
-      ensureEmailConfigured();
       const verificationToken = newEmailToken();
-      await prisma.user.update({ where: { id: user.id }, data: { emailVerificationToken: tokenHash(verificationToken), emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) } });
-      await sendVerificationEmail({ email: user.email, firstName: user.firstName, token: verificationToken });
+      await prisma.$transaction(async (tx) => {
+        const updatedUser = await tx.user.update({ where: { id: user.id }, data: { emailVerificationToken: tokenHash(verificationToken), emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) } });
+        await enqueueVerificationEmail(tx, { user: updatedUser, token: verificationToken });
+      });
     }
     res.status(200).json({ success: true, message: 'If the account needs verification, a link has been sent.' });
   } catch (error) {
