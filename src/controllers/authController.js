@@ -6,11 +6,19 @@ import { ensureEmailConfigured, sendPasswordResetEmail, sendVerificationEmail } 
 
 const tokenHash = (token) => crypto.createHash('sha256').update(token).digest('hex');
 const newEmailToken = () => crypto.randomBytes(32).toString('hex');
+const isStrongPassword = (password) => (
+  typeof password === 'string'
+  && password.length >= 8
+  && /[a-z]/.test(password)
+  && /[A-Z]/.test(password)
+  && /\d/.test(password)
+  && /[^A-Za-z0-9\s]/.test(password)
+);
 
-// @desc    Register user
-// @route   POST /api/auth/register
+// @desc    Sign up user
+// @route   POST /api/auth/signup
 // @access  Public
-export const register = async (req, res) => {
+export const signup = async (req, res) => {
   try {
     const { email, password, firstName, lastName, accountType } = req.body;
     ensureEmailConfigured();
@@ -72,7 +80,7 @@ export const register = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Register error:', error);
+    console.error('Signup error:', error);
 
     res.status(error.statusCode || 500).json({
       success: false,
@@ -241,8 +249,11 @@ export const forgotPassword = async (req, res) => {
 export const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
-    if (typeof token !== 'string' || !token || typeof password !== 'string' || password.length < 6) {
-      return res.status(400).json({ success: false, message: 'A valid token and a password of at least 6 characters are required' });
+    if (typeof token !== 'string' || !token || !isStrongPassword(password)) {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid token and a password of at least 8 characters with uppercase, lowercase, a number, and a special character are required'
+      });
     }
     const user = await prisma.user.findFirst({ where: { passwordResetToken: tokenHash(token), passwordResetExpires: { gt: new Date() } } });
     if (!user) return res.status(400).json({ success: false, message: 'Password reset token is invalid or expired' });

@@ -1,12 +1,12 @@
 import express from 'express';
-import { register, login, getMe, forgotPassword, resetPassword, resendVerification, verifyEmail, refresh, logout } from '../controllers/authController.js';
+import { signup, login, getMe, forgotPassword, resetPassword, resendVerification, verifyEmail, refresh, logout } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
 import { validate, authValidation } from '../middleware/validation.js';
 import { googleLogin } from "../controllers/oauthController.js";
 
 const router = express.Router();
 
-router.post('/register', validate(authValidation.register), register);
+router.post('/signup', validate(authValidation.signup), signup);
 router.post('/login', validate(authValidation.login), login);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);

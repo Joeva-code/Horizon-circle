@@ -18,9 +18,11 @@ export const validate = (validations) => {
 
 // Common validation rules
 export const authValidation = {
-  register: [
+  signup: [
     body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('password')
+      .isStrongPassword({ minLength: 8, minLowercase: 1, minUppercase: 1, minNumbers: 1, minSymbols: 1 })
+      .withMessage('Password must be at least 8 characters and include uppercase, lowercase, a number, and a special character'),
     body('firstName').optional().isString().trim(),
     body('lastName').optional().isString().trim(),
     body().custom((_, { req }) => {
