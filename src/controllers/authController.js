@@ -55,8 +55,8 @@ export const signup = async (req, res) => {
       return createdUser;
     });
 
-    // Registration is intentionally not an authenticated session. The user can
-    // sign in only after the verification link marks the account as verified.
+    // Registration does not create a session. Users can sign in immediately;
+    // the client can use isVerified to prompt them to verify their email.
     res.status(202).json({
       success: true,
       message: 'Signup successful; check your email.',
@@ -101,10 +101,6 @@ export const login = async (req, res) => {
         success: false,
         message: 'Your account has been deactivated'
       });
-    }
-
-    if (!user.isVerified) {
-      return res.status(403).json({ success: false, message: 'Please verify your email before signing in' });
     }
 
     // Verify password
@@ -250,14 +246,6 @@ export const resetPassword = async (req, res) => {
       data: { password: await bcrypt.hash(password, 10), passwordResetToken: null, passwordResetExpires: null, lastLogin: new Date() }
     });
     await prisma.refreshToken.updateMany({ where: { userId: user.id, revokedAt: null }, data: { revokedAt: new Date() } });
-    if (!updatedUser.isVerified) {
-      return res.status(200).json({
-        success: true,
-        message: 'Password reset successfully. Please verify your email before signing in.',
-        data: toPublicUser(updatedUser)
-      });
-    }
-
     const { accessToken, refreshToken } = await issueTokenPair(updatedUser);
     setRefreshCookie(res, refreshToken);
     res.status(200).json({ success: true, message: 'Password reset successfully', token: accessToken, data: toPublicUser(updatedUser) });
