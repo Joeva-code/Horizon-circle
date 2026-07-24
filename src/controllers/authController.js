@@ -26,7 +26,16 @@ export const signup = async (req, res) => {
     const verificationToken = newEmailToken();
     const user = await prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
-        data: { email, password: hashedPassword, firstName, lastName, role: accountType, emailVerificationToken: tokenHash(verificationToken), emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) }
+        data: {
+          email,
+          password: hashedPassword,
+          firstName,
+          lastName,
+          role: accountType,
+          termsAcceptedAt: new Date(),
+          emailVerificationToken: tokenHash(verificationToken),
+          emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        }
       });
       if (createdUser.role === 'VENDOR') {
         await tx.vendorProfile.create({ data: { userId: createdUser.id, businessName: '', category: '', location: '', isPublished: false } });

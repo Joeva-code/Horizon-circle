@@ -6,7 +6,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const googleLogin = async (req, res) => {
   try {
-    const { token, accountType, role } = req.body;
+    const { token, accountType, role, termsAccepted } = req.body;
 
     if (!token) {
       return res.status(400).json({
@@ -60,6 +60,13 @@ export const googleLogin = async (req, res) => {
     });
 
     if (!user) {
+      if (termsAccepted !== true) {
+        return res.status(400).json({
+          success: false,
+          message: 'You must accept the terms and conditions before signing up'
+        });
+      }
+
       user = await prisma.$transaction(async (tx) => {
         const newUser = await tx.user.create({
           data: {
@@ -70,7 +77,8 @@ export const googleLogin = async (req, res) => {
             role: requestedRole,
             provider: "GOOGLE",
             providerId: sub,
-            isVerified: true
+            isVerified: true,
+            termsAcceptedAt: new Date()
           }
         });
 
