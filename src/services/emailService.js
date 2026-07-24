@@ -19,6 +19,9 @@ const transporter = () => nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: Number(process.env.SMTP_PORT || 465),
   secure: String(process.env.SMTP_SECURE || 'true') === 'true',
+  // Many hosting providers do not provide IPv6 egress. Gmail may resolve to an
+  // IPv6 address first, so force IPv4 to keep verification delivery reliable.
+  family: 4,
   auth: { user: required('SMTP_USER'), pass: required('SMTP_PASS') }
 });
 
