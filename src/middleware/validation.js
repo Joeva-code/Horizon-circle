@@ -1,5 +1,14 @@
 import { body, param, query, validationResult } from 'express-validator';
 
+const registrationRoleAliases = {
+  PLANNER: 'PLANNER',
+  ORGANIZER: 'PLANNER',
+  VENDOR: 'VENDOR',
+  // The currently deployed frontend sends this misspelling. Keep this alias
+  // at the API boundary so it does not leak into the domain model.
+  VMENDOR: 'VENDOR'
+};
+
 export const validate = (validations) => {
   return async (req, res, next) => {
     await Promise.all(validations.map(validation => validation.run(req)));
@@ -29,16 +38,16 @@ export const authValidation = {
       .custom((value) => value === true)
       .withMessage('You must accept the terms and conditions before signing up'),
     body().custom((_, { req }) => {
-      // `accountType` is the public registration field. Accept `role` too so
-      // existing clients keep working while they migrate.
+      // `accountType` is the canonical registration field. `role` is kept as
+      // a compatibility input for existing clients.
       const accountType = req.body.accountType ?? req.body.role;
 
       if (typeof accountType !== 'string') {
         throw new Error('Account type must be Vendor or Planner');
       }
 
-      const normalizedAccountType = accountType.trim().toUpperCase();
-      if (!['PLANNER', 'VENDOR'].includes(normalizedAccountType)) {
+      const normalizedAccountType = registrationRoleAliases[accountType.trim().toUpperCase()];
+      if (!normalizedAccountType) {
         throw new Error('Account type must be Vendor or Planner');
       }
 

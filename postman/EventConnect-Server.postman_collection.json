@@ -1,0 +1,146 @@
+{
+  "info": {
+    "_postman_id": "8d51e7e1-0f60-4e30-a82f-c0a2dbf16d51",
+    "name": "EventConnect Server API",
+    "description": "Import this collection into Postman. Set baseUrl and the IDs in the collection variables. Login requests automatically save the returned token to accessToken and the matching plannerToken or vendorToken variable. Postman stores the HTTP-only refresh cookie automatically. The deployed frontend uses /api/auth/register; it is a compatibility alias for /api/auth/signup. Every registration request must include termsAccepted: true.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "accessToken", "value": "" },
+    { "key": "plannerToken", "value": "" },
+    { "key": "vendorToken", "value": "" },
+    { "key": "vendorId", "value": "" },
+    { "key": "vendorProfileId", "value": "" },
+    { "key": "enquiryId", "value": "" },
+    { "key": "reviewId", "value": "" },
+    { "key": "verificationToken", "value": "" },
+    { "key": "resetToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        { "name": "API Root", "request": { "method": "GET", "url": "{{baseUrl}}/" } },
+        { "name": "Health Check", "request": { "method": "GET", "url": "{{baseUrl}}/health" } }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Sign Up - Planner",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"planner@example.com\",\n  \"password\": \"StrongPass1!\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"Planner\",\n  \"accountType\": \"PLANNER\",\n  \"termsAccepted\": true\n}" },
+            "url": "{{baseUrl}}/api/auth/signup",
+            "description": "Creates an account and sends an email-verification link. Password: 8+ chars, uppercase, lowercase, number, special character. termsAccepted must be the boolean true."
+          }
+        },
+        {
+          "name": "Sign Up - Vendor",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"vendor@example.com\",\n  \"password\": \"StrongPass1!\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"Vendor\",\n  \"accountType\": \"VENDOR\",\n  \"termsAccepted\": true\n}" },
+            "url": "{{baseUrl}}/api/auth/signup",
+            "description": "Creates a vendor account and sends an email-verification link. termsAccepted must be the boolean true."
+          }
+        },
+        {
+          "name": "Register - Frontend Compatible Planner",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"frontend-planner@example.com\",\n  \"password\": \"StrongPass1!\",\n  \"firstName\": \"Frontend\",\n  \"lastName\": \"Planner\",\n  \"role\": \"organizer\",\n  \"termsAccepted\": true\n}" },
+            "url": "{{baseUrl}}/api/auth/register",
+            "description": "Matches the deployed frontend route and role value. organizer is normalized to the stored PLANNER role."
+          }
+        },
+        {
+          "name": "Register - Frontend Compatible Vendor",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"frontend-vendor@example.com\",\n  \"password\": \"StrongPass1!\",\n  \"firstName\": \"Frontend\",\n  \"lastName\": \"Vendor\",\n  \"role\": \"vmendor\",\n  \"termsAccepted\": true\n}" },
+            "url": "{{baseUrl}}/api/auth/register",
+            "description": "Matches the deployed frontend's current vmendor typo. It is normalized to the stored VENDOR role."
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/auth/verify-email?token={{verificationToken}}", "description": "Usually open the link delivered by email. Paste its token into verificationToken to run here." }
+        },
+        {
+          "name": "Resend Verification Email",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"planner@example.com\"\n}" }, "url": "{{baseUrl}}/api/auth/resend-verification" }
+        },
+        {
+          "name": "Login",
+          "event": [{ "listen": "test", "script": { "exec": ["if (pm.response.code === 200) {", "  const body = pm.response.json();", "  pm.collectionVariables.set('accessToken', body.token);", "  if (body.data.role === 'PLANNER') pm.collectionVariables.set('plannerToken', body.token);", "  if (body.data.role === 'VENDOR') pm.collectionVariables.set('vendorToken', body.token);", "}"] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"planner@example.com\",\n  \"password\": \"StrongPass1!\"\n}" }, "url": "{{baseUrl}}/api/auth/login", "description": "The test script stores the JWT automatically. Postman also saves the HTTP-only refresh cookie." }
+        },
+        {
+          "name": "Google Login",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"token\": \"GOOGLE_ID_TOKEN\",\n  \"accountType\": \"PLANNER\"\n}" }, "url": "{{baseUrl}}/api/auth/google" }
+        },
+        { "name": "Get Current User", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }], "url": "{{baseUrl}}/api/auth/me" } },
+        { "name": "Refresh Access Token", "event": [{ "listen": "test", "script": { "exec": ["if (pm.response.code === 200) pm.collectionVariables.set('accessToken', pm.response.json().token);"] } }], "request": { "method": "POST", "url": "{{baseUrl}}/api/auth/refresh", "description": "Uses the refreshToken cookie automatically. For native clients, send refreshToken in JSON." } },
+        { "name": "Logout", "request": { "method": "POST", "url": "{{baseUrl}}/api/auth/logout" } },
+        { "name": "Forgot Password", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"planner@example.com\"\n}" }, "url": "{{baseUrl}}/api/auth/forgot-password" } },
+        { "name": "Reset Password", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"password\": \"NewStrongPass1!\"\n}" }, "url": "{{baseUrl}}/api/auth/reset-password" } }
+      ]
+    },
+    {
+      "name": "Planner (Planner token required)",
+      "item": [
+        { "name": "Get Profile", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{plannerToken}}" }], "url": "{{baseUrl}}/api/planner/profile" } },
+        { "name": "Update Profile", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{plannerToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"Planner\",\n  \"phone\": \"+2348000000000\",\n  \"location\": \"Lagos\",\n  \"bio\": \"Planning memorable events.\",\n  \"preferredEventTypes\": [\"Wedding\", \"Corporate\"]\n}" }, "url": "{{baseUrl}}/api/planner/profile" } },
+        { "name": "Get Dashboard", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{plannerToken}}" }], "url": "{{baseUrl}}/api/planner/dashboard" } },
+        { "name": "Get Statistics", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{plannerToken}}" }], "url": "{{baseUrl}}/api/planner/stats" } }
+      ]
+    },
+    {
+      "name": "Vendor (Vendor token required)",
+      "item": [
+        { "name": "Get Profile", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{vendorToken}}" }], "url": "{{baseUrl}}/api/vendor/profile" } },
+        { "name": "Create or Update Profile (POST)", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{vendorToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"businessName\": \"Test Events\",\n  \"category\": \"Catering\",\n  \"description\": \"Event catering.\",\n  \"location\": \"Lagos\",\n  \"priceRange\": \"₦50,000 - ₦100,000\",\n  \"availability\": {}\n}" }, "url": "{{baseUrl}}/api/vendor/profile" } },
+        { "name": "Create or Update Profile (PUT)", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{vendorToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"businessName\": \"Test Events\",\n  \"category\": \"Catering\",\n  \"location\": \"Lagos\"\n}" }, "url": "{{baseUrl}}/api/vendor/profile" } },
+        { "name": "Upload Profile Image", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{vendorToken}}" }], "body": { "mode": "formdata", "formdata": [{ "key": "image", "type": "file", "src": "" }] }, "url": "{{baseUrl}}/api/vendor/profile/image", "description": "Image only; maximum 5 MB." } },
+        { "name": "Upload Portfolio Images", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{vendorToken}}" }], "body": { "mode": "formdata", "formdata": [{ "key": "images", "type": "file", "src": "" }] }, "url": "{{baseUrl}}/api/vendor/profile/portfolio", "description": "Use the images field up to 10 times; images only, maximum 5 MB each." } },
+        { "name": "Remove Portfolio Image", "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{vendorToken}}" }], "url": "{{baseUrl}}/api/vendor/profile/portfolio/0" } },
+        { "name": "Get Dashboard", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{vendorToken}}" }], "url": "{{baseUrl}}/api/vendor/dashboard" } },
+        { "name": "Get Statistics", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{vendorToken}}" }], "url": "{{baseUrl}}/api/vendor/stats" } },
+        { "name": "Update Availability", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{vendorToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"availability\": {}\n}" }, "url": "{{baseUrl}}/api/vendor/availability" } }
+      ]
+    },
+    {
+      "name": "Enquiries",
+      "item": [
+        { "name": "Create Enquiry (Planner)", "event": [{ "listen": "test", "script": { "exec": ["if (pm.response.code === 201) pm.collectionVariables.set('enquiryId', pm.response.json().data.id);"] } }], "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{plannerToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"vendorId\": \"{{vendorId}}\",\n  \"eventType\": \"Wedding\",\n  \"eventDate\": \"2027-01-15T12:00:00.000Z\",\n  \"eventLocation\": \"Lagos\",\n  \"guestCount\": 150,\n  \"budget\": 250000,\n  \"specialNotes\": \"Vegetarian options required.\"\n}" }, "url": "{{baseUrl}}/api/enquiries" } },
+        { "name": "List Planner Enquiries", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{plannerToken}}" }], "url": "{{baseUrl}}/api/enquiries/planner?status=NEW&page=1&limit=20" } },
+        { "name": "List Vendor Enquiries", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{vendorToken}}" }], "url": "{{baseUrl}}/api/enquiries/vendor?status=NEW&page=1&limit=20" } },
+        { "name": "Get Enquiry Details", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }], "url": "{{baseUrl}}/api/enquiries/{{enquiryId}}" } },
+        { "name": "Respond to Enquiry (Vendor)", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{vendorToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"RESPONDED\",\n  \"responseMessage\": \"We are available for your event.\"\n}" }, "url": "{{baseUrl}}/api/enquiries/{{enquiryId}}/status" } },
+        { "name": "Book Enquiry (Vendor)", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{vendorToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"BOOKED\"\n}" }, "url": "{{baseUrl}}/api/enquiries/{{enquiryId}}/status", "description": "The enquiry must first have RESPONDED status." } }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        { "name": "Get Vendor Reviews", "request": { "method": "GET", "url": "{{baseUrl}}/api/reviews/vendor/{{vendorId}}?page=1&limit=10" } },
+        { "name": "Create Review (Planner)", "event": [{ "listen": "test", "script": { "exec": ["if (pm.response.code === 201) pm.collectionVariables.set('reviewId', pm.response.json().data.id);"] } }], "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{plannerToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"enquiryId\": \"{{enquiryId}}\",\n  \"rating\": 5,\n  \"review\": \"Excellent service and communication.\"\n}" }, "url": "{{baseUrl}}/api/reviews", "description": "The event date must have passed." } },
+        { "name": "Update Review (Planner)", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{plannerToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"rating\": 4,\n  \"review\": \"Updated review text.\"\n}" }, "url": "{{baseUrl}}/api/reviews/{{reviewId}}", "description": "Reviews can only be edited within 48 hours." } }
+      ]
+    },
+    {
+      "name": "Vendor Search (Public)",
+      "item": [
+        { "name": "Search Vendors", "request": { "method": "GET", "url": "{{baseUrl}}/api/search/vendors?category=Catering&location=Lagos&minBudget=50000&maxBudget=200000&date=2027-01-15&page=1&limit=20&sortBy=rating&sortOrder=desc" } },
+        { "name": "Get Vendor by Profile ID", "request": { "method": "GET", "url": "{{baseUrl}}/api/search/vendors/{{vendorProfileId}}" } },
+        { "name": "Get Categories", "request": { "method": "GET", "url": "{{baseUrl}}/api/search/categories" } }
+      ]
+    }
+  ]
+}

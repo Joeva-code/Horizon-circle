@@ -17,6 +17,17 @@ dotenv.config();
 
 const app = express();
 
+const defaultAllowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://orange-herizon-circle-a7pj-delta.vercel.app'
+];
+const configuredOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...configuredOrigins])];
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: (parseInt(process.env.RATE_LIMIT_WINDOW) || 15) * 60 * 1000,
@@ -31,7 +42,12 @@ const limiter = rateLimit({
 app.use(helmet());
 
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin(origin, callback) {
+    // Requests without an Origin header include server-to-server calls and
+    // health checks. Browser requests must be explicitly allow-listed.
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Origin is not allowed by CORS'));
+  },
   credentials: true
 }));
 

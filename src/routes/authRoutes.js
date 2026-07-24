@@ -6,7 +6,9 @@ import { googleLogin } from "../controllers/oauthController.js";
 
 const router = express.Router();
 
-router.post('/signup', validate(authValidation.signup), signup);
+// `/register` is retained for the deployed web client. New clients should use
+// the clearer `/signup` endpoint; both use the exact same validation and flow.
+router.post(['/signup', '/register'], validate(authValidation.signup), signup);
 router.post('/login', validate(authValidation.login), login);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
