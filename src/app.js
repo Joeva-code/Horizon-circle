@@ -12,6 +12,9 @@ import searchRoutes from './routes/searchRoutes.js';
 import enquiryRoutes from './routes/enquiryRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import plannerRoutes from './routes/plannerRoutes.js';
+import { uploadAvatar } from './controllers/authController.js';
+import { protect } from './middleware/auth.js';
+import upload from './middleware/upload.js';
 
 dotenv.config();
 
@@ -85,6 +88,17 @@ app.get('/health', (req, res) => {
 /**
  * API Routes
  */
+app.post([
+  '/api/user/avatar',
+  '/api/user/avatar/upload',
+  '/api/upload/avatar',
+  '/api/uploads/avatar',
+  '/api/upload',
+  '/api/uploads',
+  '/api/media/avatar',
+  '/api/media/upload'
+], protect, upload.any(), uploadAvatar);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/vendor', vendorRoutes);
 app.use('/api/search', searchRoutes);

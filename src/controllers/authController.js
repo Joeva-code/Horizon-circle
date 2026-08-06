@@ -158,6 +158,7 @@ export const getMe = async (req, res) => {
     firstName: true,
     lastName: true,
     role: true,
+    avatar: true,
     isVerified: true,
     isActive: true,
     lastLogin: true,
@@ -187,6 +188,57 @@ export const getMe = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching user data'
+    });
+  }
+};
+
+// @desc    Upload current user's avatar
+// @route   POST /api/auth/avatar
+// @access  Private
+export const uploadAvatar = async (req, res) => {
+  try {
+    const file = req.file || req.files?.[0];
+
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please upload an image'
+      });
+    }
+
+    const avatar = file.path;
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { avatar },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        avatar: true,
+        isVerified: true,
+        isActive: true,
+        lastLogin: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Avatar uploaded successfully',
+      data: {
+        avatar,
+        avatarUrl: avatar,
+        user
+      }
+    });
+  } catch (error) {
+    console.error('Upload avatar error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error uploading avatar'
     });
   }
 };

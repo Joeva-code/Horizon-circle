@@ -1,6 +1,7 @@
 import express from 'express';
-import { signup, login, getMe, forgotPassword, resetPassword, resendVerification, verifyEmail, refresh, logout } from '../controllers/authController.js';
+import { signup, login, getMe, uploadAvatar, forgotPassword, resetPassword, resendVerification, verifyEmail, refresh, logout } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
+import upload from '../middleware/upload.js';
 import { validate, authValidation } from '../middleware/validation.js';
 import { googleLogin } from "../controllers/oauthController.js";
 
@@ -18,5 +19,6 @@ router.post('/google', googleLogin);
 router.post('/refresh', refresh);
 router.post('/logout', logout);
 router.get('/me', protect, getMe);
+router.post('/avatar', protect, upload.any(), uploadAvatar);
 
 export default router;
