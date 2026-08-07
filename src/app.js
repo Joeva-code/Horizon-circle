@@ -22,49 +22,115 @@ dotenv.config();
 
 const app = express();
 
+/* =========================
+   CORS CONFIGURATION
+========================= */
+
 const defaultAllowedOrigins = [
   'http://localhost:3000',
+  'http://localhost:3001',
   'http://localhost:5173',
+
+  // EventConnect Vercel frontend
+  'https://event-connect-frontend-nine.vercel.app',
+
+  // Horizon Circle Vercel frontend
   'https://orange-herizon-circle-a7pj-delta.vercel.app'
 ];
+
 const configuredOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
-const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...configuredOrigins])];
 
-// Rate limiting
+const allowedOrigins = [
+  ...new Set([
+    ...defaultAllowedOrigins,
+    ...configuredOrigins
+  ])
+];
+
+console.log('✅ Allowed CORS origins:', allowedOrigins);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests without an Origin header
+      // e.g. Postman, server-to-server requests
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.error('❌ CORS blocked origin:', origin);
+
+      return callback(
+        new Error(`Origin ${origin} is not allowed by CORS`)
+      );
+    },
+
+    credentials: true,
+
+    methods: [
+      'GET',
+      'POST',
+      'PUT',
+      'PATCH',
+      'DELETE',
+      'OPTIONS'
+    ],
+
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept'
+    ]
+  })
+);
+
+/* =========================
+   SECURITY
+========================= */
+
+app.use(helmet());
+
+/* =========================
+   BODY PARSING
+========================= */
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+/* =========================
+   RATE LIMITING
+========================= */
+
 const limiter = rateLimit({
-  windowMs: (parseInt(process.env.RATE_LIMIT_WINDOW) || 15) * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+  windowMs:
+    (parseInt(process.env.RATE_LIMIT_WINDOW) || 15) *
+    60 *
+    1000,
+
+  max:
+    parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) ||
+    100,
+
   message: {
     success: false,
     message: 'Too many requests, please try again later'
   }
 });
 
-// Middleware
-app.use(helmet());
-
-app.use(cors({
-  origin(origin, callback) {
-    // Requests without an Origin header include server-to-server calls and
-    // health checks. Browser requests must be explicitly allow-listed.
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error('Origin is not allowed by CORS'));
-  },
-  credentials: true
-}));
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Apply rate limiter to API routes
 app.use('/api', limiter);
 
-/**
- * Root Route
- */
+/* =========================
+   ROOT ROUTE
+========================= */
+
 app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
@@ -75,9 +141,10 @@ app.get('/', (req, res) => {
   });
 });
 
-/**
- * Health Check
- */
+/* =========================
+   HEALTH CHECK
+========================= */
+
 app.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
@@ -87,19 +154,29 @@ app.get('/health', (req, res) => {
   });
 });
 
-/**
- * API Routes
- */
-app.post([
-  '/api/user/avatar',
-  '/api/user/avatar/upload',
-  '/api/upload/avatar',
-  '/api/uploads/avatar',
-  '/api/upload',
-  '/api/uploads',
-  '/api/media/avatar',
-  '/api/media/upload'
-], protect, upload.any(), uploadAvatar);
+/* =========================
+   FILE UPLOAD
+========================= */
+
+app.post(
+  [
+    '/api/user/avatar',
+    '/api/user/avatar/upload',
+    '/api/upload/avatar',
+    '/api/uploads/avatar',
+    '/api/upload',
+    '/api/uploads',
+    '/api/media/avatar',
+    '/api/media/upload'
+  ],
+  protect,
+  upload.any(),
+  uploadAvatar
+);
+
+/* =========================
+   API ROUTES
+========================= */
 
 app.use('/api/auth', authRoutes);
 app.use('/api/vendor', vendorRoutes);
@@ -110,9 +187,10 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/planner', plannerRoutes);
 
-/**
- * 404 Handler
- */
+/* =========================
+   404 HANDLER
+========================= */
+
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -120,9 +198,10 @@ app.use((req, res) => {
   });
 });
 
-/**
- * Global Error Handler
- */
+/* =========================
+   GLOBAL ERROR HANDLER
+========================= */
+
 app.use(errorHandler);
 
 export default app;
