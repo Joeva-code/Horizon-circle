@@ -10,6 +10,8 @@ import authRoutes from './routes/authRoutes.js';
 import vendorRoutes from './routes/vendorRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
 import enquiryRoutes from './routes/enquiryRoutes.js';
+import bookingRoutes from './routes/bookingRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import plannerRoutes from './routes/plannerRoutes.js';
 import { uploadAvatar } from './controllers/authController.js';
@@ -103,6 +105,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/vendor', vendorRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/enquiries', enquiryRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/chat', chatRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/planner', plannerRoutes);
 

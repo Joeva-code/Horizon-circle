@@ -1,5 +1,5 @@
 import { prisma } from '../config/database.js';
-import { Prisma } from '@prisma/client';
+import { isAvailableOn, normalizeAvailability } from '../services/availabilityService.js';
 
 // @desc    Search vendors with filters
 // @route   GET /api/search/vendors
@@ -20,7 +20,10 @@ export const searchVendors = async (req, res) => {
     } = req.query;
 
     const whereClause = {
-      isPublished: true
+      user: {
+        role: 'VENDOR',
+        isActive: true
+      }
     };
 
     // Category filter
@@ -129,10 +132,7 @@ export const searchVendors = async (req, res) => {
     if (date) {
       const eventDate = new Date(date);
       filteredVendors = filteredVendors.filter(vendor => {
-        if (!vendor.availability) return true;
-        // Check if vendor is available on the date
-        // This is a simplified check - you can expand based on your availability data structure
-        return true;
+        return isAvailableOn(vendor.availability, eventDate);
       });
     }
 
@@ -164,18 +164,14 @@ export const getVendorById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Increment view count
-    await prisma.vendorProfile.update({
-      where: { id },
-      data: {
-        viewCount: {
-          increment: 1
+    const vendor = await prisma.vendorProfile.findFirst({
+      where: {
+        id,
+        user: {
+          role: 'VENDOR',
+          isActive: true
         }
-      }
-    });
-
-    const vendor = await prisma.vendorProfile.findUnique({
-      where: { id },
+      },
       include: {
         user: {
           select: {
@@ -209,12 +205,14 @@ export const getVendorById = async (req, res) => {
       });
     }
 
-    if (!vendor.isPublished) {
-      return res.status(404).json({
-        success: false,
-        message: 'Vendor not available'
-      });
-    }
+    await prisma.vendorProfile.update({
+      where: { id },
+      data: {
+        viewCount: {
+          increment: 1
+        }
+      }
+    });
 
     res.status(200).json({
       success: true,
@@ -235,7 +233,15 @@ export const getVendorById = async (req, res) => {
 export const getCategories = async (req, res) => {
   try {
     const categories = await prisma.vendorProfile.findMany({
-      where: { isPublished: true },
+      where: {
+        user: {
+          role: 'VENDOR',
+          isActive: true
+        },
+        category: {
+          not: ''
+        }
+      },
       distinct: ['category'],
       select: {
         category: true
@@ -252,5 +258,32 @@ export const getCategories = async (req, res) => {
       success: false,
       message: 'Error fetching categories'
     });
+  }
+};
+
+// @desc    Get the unavailable dates for a vendor
+// @route   GET /api/search/vendors/:id/availability
+// @access  Public
+export const getVendorAvailability = async (req, res) => {
+  try {
+    const vendor = await prisma.vendorProfile.findFirst({
+      where: {
+        userId: req.params.id,
+        user: {
+          role: 'VENDOR',
+          isActive: true
+        }
+      },
+      select: { availability: true }
+    });
+
+    if (!vendor) {
+      return res.status(404).json({ success: false, message: 'Vendor not available' });
+    }
+
+    return res.status(200).json({ success: true, data: normalizeAvailability(vendor.availability) });
+  } catch (error) {
+    console.error('Get vendor availability error:', error);
+    return res.status(500).json({ success: false, message: 'Error fetching vendor availability' });
   }
 };

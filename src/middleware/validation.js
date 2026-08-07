@@ -82,7 +82,7 @@ export const enquiryValidation = {
     body('specialNotes').optional().isString().trim().isLength({ max: 2000 }).withMessage('Special notes cannot exceed 2,000 characters')
   ],
   listEnquiries: [
-    query('status').optional().isIn(['NEW', 'RESPONDED', 'BOOKED']).withMessage('Invalid enquiry status'),
+    query('status').optional().isIn(['NEW', 'RESPONDED', 'DECLINED', 'BOOKED']).withMessage('Invalid enquiry status'),
     query('page').optional().isInt({ min: 1 }).toInt().withMessage('Page must be at least 1'),
     query('limit').optional().isInt({ min: 1, max: 100 }).toInt().withMessage('Limit must be between 1 and 100')
   ],
@@ -91,11 +91,67 @@ export const enquiryValidation = {
   ],
   updateStatus: [
     param('id').isUUID().withMessage('Invalid enquiry ID'),
-    body('status').isIn(['RESPONDED', 'BOOKED']).withMessage('Status must be RESPONDED or BOOKED'),
+    body('status').isIn(['RESPONDED', 'DECLINED', 'BOOKED']).withMessage('Status must be RESPONDED, DECLINED, or BOOKED'),
     body('responseMessage')
-      .if(body('status').equals('RESPONDED'))
+      .optional()
       .trim()
-      .notEmpty().withMessage('A response message is required when responding')
+      .isLength({ max: 2000 }).withMessage('Response message cannot exceed 2,000 characters')
+  ],
+  respondToEnquiry: [
+    param('id').isUUID().withMessage('Invalid enquiry ID'),
+    body('responseMessage')
+      .optional()
+      .trim()
+      .isLength({ max: 2000 }).withMessage('Response message cannot exceed 2,000 characters')
+  ]
+};
+
+export const chatValidation = {
+  roomId: [
+    param('roomId').isUUID().withMessage('Invalid chat room ID')
+  ],
+  sendMessage: [
+    param('roomId').isUUID().withMessage('Invalid chat room ID'),
+    body('content')
+      .isString().withMessage('Message content is required')
+      .trim()
+      .notEmpty().withMessage('Message content is required')
+      .isLength({ max: 4000 }).withMessage('Message content cannot exceed 4,000 characters')
+  ]
+};
+
+export const bookingValidation = {
+  bookVendor: [
+    body('enquiryId').optional().isUUID().withMessage('Invalid enquiry ID'),
+    body('vendorId')
+      .if((_, { req }) => !req.body.enquiryId)
+      .isUUID().withMessage('Invalid vendor ID'),
+    body('eventType')
+      .if((_, { req }) => !req.body.enquiryId)
+      .notEmpty().withMessage('Event type is required'),
+    body('eventDate')
+      .if((_, { req }) => !req.body.enquiryId)
+      .isISO8601().toDate().withMessage('Invalid event date format'),
+    body('eventLocation')
+      .if((_, { req }) => !req.body.enquiryId)
+      .notEmpty().withMessage('Event location is required'),
+    body('guestCount').optional().isInt({ min: 1 }).toInt().withMessage('Guest count must be a positive number'),
+    body('budget').optional().isNumeric().toFloat().withMessage('Budget must be a number'),
+    body('specialNotes').optional().isString().trim().isLength({ max: 2000 }).withMessage('Special notes cannot exceed 2,000 characters')
+  ],
+  listBookings: [
+    query('status').optional().isIn(['NEW', 'RESPONDED', 'DECLINED', 'BOOKED']).withMessage('Invalid booking status'),
+    query('page').optional().isInt({ min: 1 }).toInt().withMessage('Page must be at least 1'),
+    query('limit').optional().isInt({ min: 1, max: 100 }).toInt().withMessage('Limit must be between 1 and 100')
+  ],
+  bookingId: [
+    param('id').isUUID().withMessage('Invalid booking ID')
+  ],
+  respondToBooking: [
+    param('id').isUUID().withMessage('Invalid booking ID'),
+    body('responseMessage')
+      .optional()
+      .trim()
       .isLength({ max: 2000 }).withMessage('Response message cannot exceed 2,000 characters')
   ]
 };

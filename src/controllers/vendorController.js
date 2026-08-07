@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { normalizeAvailability } from '../services/availabilityService.js';
 
 // @desc    Create/Update vendor profile
 // @route   POST /api/vendor/profile
@@ -258,7 +259,15 @@ export const getDashboard = async (req, res) => {
             id: true,
             firstName: true,
             lastName: true,
-            email: true
+            email: true,
+            avatar: true
+          }
+        },
+        chatRoom: {
+          select: {
+            id: true,
+            createdAt: true,
+            updatedAt: true
           }
         }
       }
@@ -268,6 +277,7 @@ export const getDashboard = async (req, res) => {
     const statusCounts = {
       NEW: enquiries.filter(e => e.status === 'NEW').length,
       RESPONDED: enquiries.filter(e => e.status === 'RESPONDED').length,
+      DECLINED: enquiries.filter(e => e.status === 'DECLINED').length,
       BOOKED: enquiries.filter(e => e.status === 'BOOKED').length
     };
 
@@ -319,7 +329,7 @@ export const getDashboard = async (req, res) => {
 // @access  Private (Vendor only)
 export const updateAvailability = async (req, res) => {
   try {
-    const { availability } = req.body;
+    const availability = normalizeAvailability(req.body.availability);
 
     const profile = await prisma.vendorProfile.findUnique({
       where: { userId: req.user.id }

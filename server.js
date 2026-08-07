@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import app from './src/app.js';
 import { connectDB, disconnectDB } from './src/config/database.js';
 import { startEmailQueueWorker } from './src/services/emailJobService.js';
+import { initializeSocket } from './src/chat/socket.js';
 
 dotenv.config();
 
@@ -32,6 +33,8 @@ const startServer = async () => {
       console.log(`📡 Environment: ${process.env.NODE_ENV}`);
       console.log(`🔗 API URL: http://localhost:${PORT}/api`);
     });
+
+    initializeSocket(server);
 
     // Graceful shutdown
     const shutdown = async () => {

@@ -1,0 +1,8 @@
+model = "gpt-5.5"
+model_provider = "agentrouter"
+
+[model_providers.agentrouter]
+name = "AgentRouter"
+base_url = "https://co.agentrouter.org/v1"
+env_key = "sk-ozc5PoiNSLLiTsr3vU5CWxmhf4Rm08jlsrNNVxhvUzcwzNzc"
+wire_api = "chat"

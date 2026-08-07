@@ -99,6 +99,9 @@ export const getDashboard = async (req, res) => {
         include: {
           vendorProfile: {
             select: { id: true, businessName: true, category: true, location: true, profileImage: true }
+          },
+          chatRoom: {
+            select: { id: true, createdAt: true, updatedAt: true }
           }
         }
       }),
@@ -113,7 +116,7 @@ export const getDashboard = async (req, res) => {
       })
     ]);
 
-    const statusCounts = { NEW: 0, RESPONDED: 0, BOOKED: 0 };
+    const statusCounts = { NEW: 0, RESPONDED: 0, DECLINED: 0, BOOKED: 0 };
     for (const group of statusGroups) statusCounts[group.status] = group._count._all;
 
     return res.status(200).json({
@@ -121,7 +124,7 @@ export const getDashboard = async (req, res) => {
       data: {
         profile: planner,
         summary: {
-          totalEnquiries: statusCounts.NEW + statusCounts.RESPONDED + statusCounts.BOOKED,
+          totalEnquiries: statusCounts.NEW + statusCounts.RESPONDED + statusCounts.DECLINED + statusCounts.BOOKED,
           statusCounts,
           upcomingEvents: upcomingEvents.length,
           reviewableEnquiries
@@ -148,13 +151,13 @@ export const getStats = async (req, res) => {
       prisma.review.count({ where: { plannerId } })
     ]);
 
-    const statusBreakdown = { NEW: 0, RESPONDED: 0, BOOKED: 0 };
+    const statusBreakdown = { NEW: 0, RESPONDED: 0, DECLINED: 0, BOOKED: 0 };
     for (const group of statusGroups) statusBreakdown[group.status] = group._count._all;
 
     return res.status(200).json({
       success: true,
       data: {
-        totalEnquiries: statusBreakdown.NEW + statusBreakdown.RESPONDED + statusBreakdown.BOOKED,
+        totalEnquiries: statusBreakdown.NEW + statusBreakdown.RESPONDED + statusBreakdown.DECLINED + statusBreakdown.BOOKED,
         statusBreakdown,
         totalBookings: statusBreakdown.BOOKED,
         totalBudget: totalBudget._sum.budget || 0,

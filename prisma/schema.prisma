@@ -46,6 +46,9 @@ model User {
   vendorReviews      Review[] @relation("VendorReviews")
   refreshTokens      RefreshToken[]
   emailJobs          EmailJob[]
+  plannerChatRooms   ChatRoom[] @relation("PlannerChatRooms")
+  vendorChatRooms    ChatRoom[] @relation("VendorChatRooms")
+  sentChatMessages   ChatMessage[] @relation("SentChatMessages")
 
   @@unique([provider, providerId])
   @@map("users")
@@ -145,6 +148,9 @@ model Enquiry {
   status            EnquiryStatus   @default(NEW)
   responseMessage   String?
   respondedAt       DateTime?
+  isBookingRequest  Boolean         @default(false)
+  bookingRequestedAt DateTime?
+  bookingRespondedAt DateTime?
   bookedAt          DateTime?
   isDuplicate       Boolean         @default(false)
   originalEnquiryId String?
@@ -158,9 +164,41 @@ model Enquiry {
   originalEnquiry   Enquiry?        @relation("OriginalEnquiry", fields: [originalEnquiryId], references: [id])
   duplicateEnquiries Enquiry[]      @relation("OriginalEnquiry")
   review            Review?
+  chatRoom          ChatRoom?
 
   @@unique([plannerId, vendorId, eventType, eventDate], map: "enquiries_plannerId_vendorId_eventType_eventDate_key")
   @@map("enquiries")
+}
+
+model ChatRoom {
+  id        String        @id @default(uuid())
+  plannerId String
+  vendorId  String
+  enquiryId String        @unique
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  planner   User          @relation("PlannerChatRooms", fields: [plannerId], references: [id], onDelete: Cascade)
+  vendor    User          @relation("VendorChatRooms", fields: [vendorId], references: [id], onDelete: Cascade)
+  enquiry   Enquiry       @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  messages  ChatMessage[]
+
+  @@map("chat_rooms")
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  roomId    String
+  senderId  String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender    User     @relation("SentChatMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, createdAt])
+  @@map("chat_messages")
 }
 
 model Review {
@@ -193,6 +231,7 @@ enum Role {
 enum EnquiryStatus {
   NEW
   RESPONDED
+  DECLINED
   BOOKED
 }
 

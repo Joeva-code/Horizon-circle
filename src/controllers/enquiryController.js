@@ -1,4 +1,45 @@
 import { prisma } from '../config/database.js';
+import { ensureChatRoomForEnquiry } from '../services/chatService.js';
+import { isAvailableOn } from '../services/availabilityService.js';
+
+const personSelect = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  avatar: true
+};
+
+const vendorProfileSelect = {
+  id: true,
+  businessName: true,
+  category: true,
+  location: true,
+  profileImage: true,
+  averageRating: true,
+  totalReviews: true
+};
+
+const chatRoomSelect = {
+  id: true,
+  createdAt: true,
+  updatedAt: true
+};
+
+const enquiryListInclude = {
+  planner: { select: personSelect },
+  vendor: { select: personSelect },
+  vendorProfile: { select: vendorProfileSelect },
+  chatRoom: { select: chatRoomSelect }
+};
+
+const ensureChatForAcceptedEnquiry = (tx, enquiry) => {
+  return ensureChatRoomForEnquiry(tx, {
+    plannerId: enquiry.plannerId,
+    vendorId: enquiry.vendorId,
+    enquiryId: enquiry.id
+  });
+};
 
 // @desc    Create enquiry
 // @route   POST /api/enquiries
@@ -15,7 +56,6 @@ export const createEnquiry = async (req, res) => {
       specialNotes
     } = req.body;
 
-    // Check if vendor exists and is published
     const vendorProfile = await prisma.vendorProfile.findUnique({
       where: { userId: vendorId }
     });
@@ -27,8 +67,13 @@ export const createEnquiry = async (req, res) => {
       });
     }
 
-    // Reject duplicates before creating the record. The database unique
-    // constraint below is the final safeguard against concurrent requests.
+    if (!isAvailableOn(vendorProfile.availability, eventDate)) {
+      return res.status(409).json({
+        success: false,
+        message: 'This vendor is not available on the selected date'
+      });
+    }
+
     const duplicateEnquiry = await prisma.enquiry.findFirst({
       where: {
         plannerId: req.user.id,
@@ -62,11 +107,7 @@ export const createEnquiry = async (req, res) => {
           specialNotes,
           status: 'NEW'
         },
-        include: {
-          planner: { select: { id: true, firstName: true, lastName: true, email: true } },
-          vendor: { select: { id: true, firstName: true, lastName: true, email: true } },
-          vendorProfile: true
-        }
+        include: enquiryListInclude
       });
 
       await tx.vendorProfile.update({
@@ -77,7 +118,7 @@ export const createEnquiry = async (req, res) => {
       return created;
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Enquiry sent successfully',
       data: enquiry
@@ -91,7 +132,7 @@ export const createEnquiry = async (req, res) => {
     }
 
     console.error('Create enquiry error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Error sending enquiry'
     });
@@ -104,65 +145,38 @@ export const createEnquiry = async (req, res) => {
 export const getPlannerEnquiries = async (req, res) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
+    const whereClause = { plannerId: req.user.id };
 
-    const whereClause = {
-      plannerId: req.user.id
-    };
+    if (status) whereClause.status = status;
 
-    if (status) {
-      whereClause.status = status;
-    }
+    const skip = (page - 1) * limit;
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const take = parseInt(limit);
+    const [enquiries, total] = await Promise.all([
+      prisma.enquiry.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: enquiryListInclude
+      }),
+      prisma.enquiry.count({ where: whereClause })
+    ]);
 
-    const enquiries = await prisma.enquiry.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take,
-      include: {
-        vendor: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true
-          }
-        },
-        vendorProfile: {
-          select: {
-            id: true,
-            businessName: true,
-            category: true,
-            location: true,
-            profileImage: true,
-            averageRating: true,
-            totalReviews: true
-          }
-        }
-      }
-    });
-
-    const total = await prisma.enquiry.count({
-      where: whereClause
-    });
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: {
         enquiries,
         pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
+          page,
+          limit,
           total,
-          totalPages: Math.ceil(total / parseInt(limit))
+          totalPages: Math.ceil(total / limit)
         }
       }
     });
   } catch (error) {
     console.error('Get planner enquiries error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Error fetching enquiries'
     });
@@ -175,83 +189,52 @@ export const getPlannerEnquiries = async (req, res) => {
 export const getVendorEnquiries = async (req, res) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
+    const whereClause = { vendorId: req.user.id };
 
-    const whereClause = {
-      vendorId: req.user.id
-    };
+    if (status) whereClause.status = status;
 
-    if (status) {
-      whereClause.status = status;
-    }
+    const skip = (page - 1) * limit;
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const take = parseInt(limit);
-
-    const enquiries = await prisma.enquiry.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take,
-      include: {
-        planner: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true
-          }
-        },
-        vendorProfile: {
-          select: {
-            id: true,
-            businessName: true
-          }
+    const [enquiries, total, totalEnquiries, respondedEnquiries] = await Promise.all([
+      prisma.enquiry.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: enquiryListInclude
+      }),
+      prisma.enquiry.count({ where: whereClause }),
+      prisma.enquiry.count({ where: { vendorId: req.user.id } }),
+      prisma.enquiry.count({
+        where: {
+          vendorId: req.user.id,
+          status: { in: ['RESPONDED', 'DECLINED', 'BOOKED'] }
         }
-      }
-    });
-
-    const total = await prisma.enquiry.count({
-      where: whereClause
-    });
-
-    // Update response rate
-    const totalEnquiries = await prisma.enquiry.count({
-      where: { vendorId: req.user.id }
-    });
-
-    const respondedEnquiries = await prisma.enquiry.count({
-      where: {
-        vendorId: req.user.id,
-        status: {
-          in: ['RESPONDED', 'BOOKED']
-        }
-      }
-    });
+      })
+    ]);
 
     const responseRate = totalEnquiries > 0 ? (respondedEnquiries / totalEnquiries) * 100 : 0;
 
     await prisma.vendorProfile.update({
       where: { userId: req.user.id },
-      data: {
-        responseRate: parseFloat(responseRate.toFixed(2))
-      }
+      data: { responseRate: parseFloat(responseRate.toFixed(2)) }
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: {
         enquiries,
         pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
+          page,
+          limit,
           total,
-          totalPages: Math.ceil(total / parseInt(limit))
+          totalPages: Math.ceil(total / limit)
         }
       }
     });
   } catch (error) {
     console.error('Get vendor enquiries error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Error fetching enquiries'
     });
@@ -270,9 +253,6 @@ export const updateEnquiryStatus = async (req, res) => {
       where: {
         id,
         vendorId: req.user.id
-      },
-      include: {
-        vendorProfile: true
       }
     });
 
@@ -283,21 +263,30 @@ export const updateEnquiryStatus = async (req, res) => {
       });
     }
 
-    if (enquiry.status === 'BOOKED') {
-      return res.status(400).json({ success: false, message: 'A booked enquiry cannot be changed' });
+    if (['BOOKED', 'DECLINED'].includes(enquiry.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `A ${enquiry.status.toLowerCase()} enquiry cannot be changed`
+      });
     }
 
     if (status === enquiry.status) {
-      return res.status(400).json({ success: false, message: `Enquiry is already ${status.toLowerCase()}` });
+      return res.status(400).json({
+        success: false,
+        message: `Enquiry is already ${status.toLowerCase()}`
+      });
     }
 
     if (status === 'BOOKED' && enquiry.status !== 'RESPONDED') {
-      return res.status(400).json({ success: false, message: 'An enquiry must be responded to before it can be booked' });
+      return res.status(400).json({
+        success: false,
+        message: 'An enquiry must be accepted before it can be booked'
+      });
     }
 
     const updateData = { status };
 
-    if (status === 'RESPONDED') {
+    if (['RESPONDED', 'DECLINED'].includes(status)) {
       updateData.responseMessage = responseMessage;
       updateData.respondedAt = new Date();
     }
@@ -310,11 +299,12 @@ export const updateEnquiryStatus = async (req, res) => {
       const updated = await tx.enquiry.update({
         where: { id },
         data: updateData,
-        include: {
-          planner: { select: { id: true, firstName: true, lastName: true, email: true } },
-          vendor: { select: { id: true, firstName: true, lastName: true, email: true } }
-        }
+        include: enquiryListInclude
       });
+
+      if (status === 'RESPONDED') {
+        await ensureChatForAcceptedEnquiry(tx, enquiry);
+      }
 
       if (status === 'BOOKED') {
         await tx.vendorProfile.update({
@@ -323,20 +313,86 @@ export const updateEnquiryStatus = async (req, res) => {
         });
       }
 
-      return updated;
+      return tx.enquiry.findUnique({
+        where: { id: updated.id },
+        include: enquiryListInclude
+      });
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Enquiry status updated successfully',
       data: updatedEnquiry
     });
   } catch (error) {
     console.error('Update enquiry status error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Error updating enquiry status'
     });
+  }
+};
+
+// @desc    Accept an enquiry and open the planner/vendor chat
+// @route   POST /api/enquiries/:id/accept
+// @access  Private (Vendor only)
+export const acceptEnquiry = async (req, res) => {
+  req.body.status = 'RESPONDED';
+  return updateEnquiryStatus(req, res);
+};
+
+// @desc    Decline an enquiry
+// @route   POST /api/enquiries/:id/decline
+// @access  Private (Vendor only)
+export const declineEnquiry = async (req, res) => {
+  req.body.status = 'DECLINED';
+  return updateEnquiryStatus(req, res);
+};
+
+// @desc    Open the chat for an accepted/booked enquiry
+// @route   GET /api/enquiries/:id/chat
+// @access  Private
+export const openEnquiryChat = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const enquiry = await prisma.enquiry.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        plannerId: true,
+        vendorId: true,
+        status: true,
+        chatRoom: { select: chatRoomSelect }
+      }
+    });
+
+    if (!enquiry) {
+      return res.status(404).json({ success: false, message: 'Enquiry not found' });
+    }
+
+    if (enquiry.plannerId !== req.user.id && enquiry.vendorId !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to access this chat'
+      });
+    }
+
+    if (!['RESPONDED', 'BOOKED'].includes(enquiry.status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Chat opens after the vendor accepts the enquiry'
+      });
+    }
+
+    const room = enquiry.chatRoom ?? await prisma.$transaction((tx) => {
+      return ensureChatForAcceptedEnquiry(tx, enquiry);
+    });
+
+    return res.status(200).json({ success: true, data: room });
+  } catch (error) {
+    console.error('Open enquiry chat error:', error);
+    return res.status(500).json({ success: false, message: 'Error opening enquiry chat' });
   }
 };
 
@@ -350,22 +406,7 @@ export const getEnquiryDetails = async (req, res) => {
     const enquiry = await prisma.enquiry.findUnique({
       where: { id },
       include: {
-        planner: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true
-          }
-        },
-        vendor: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true
-          }
-        },
+        ...enquiryListInclude,
         vendorProfile: {
           include: {
             user: {
@@ -386,7 +427,6 @@ export const getEnquiryDetails = async (req, res) => {
       });
     }
 
-    // Check if user is authorized to view this enquiry
     if (enquiry.plannerId !== req.user.id && enquiry.vendorId !== req.user.id) {
       return res.status(403).json({
         success: false,
@@ -394,13 +434,13 @@ export const getEnquiryDetails = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: enquiry
     });
   } catch (error) {
     console.error('Get enquiry details error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Error fetching enquiry details'
     });
