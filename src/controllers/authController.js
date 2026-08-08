@@ -95,8 +95,8 @@ export const login = async (req, res) => {
       });
     }
 
-    // Check if account is active
-    if (!user.isActive) {
+    // Check if account is active (vendors remain usable while deactivated so they can be booked and view their dashboard)
+    if (!user.isActive && user.role !== 'VENDOR') {
       return res.status(401).json({
         success: false,
         message: 'Your account has been deactivated'

@@ -76,8 +76,7 @@ const findAvailableVendorProfile = async (vendorId) => {
     where: {
       userId: vendorId,
       user: {
-        role: 'VENDOR',
-        isActive: true
+        role: 'VENDOR'
       }
     }
   });

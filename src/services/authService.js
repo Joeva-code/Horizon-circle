@@ -66,13 +66,15 @@ export const rotateRefreshToken = async (rawToken) => {
     error.statusCode = 401;
     throw error;
   }
-  if (record.expiresAt <= new Date() || !record.user.isActive) {
+  if (record.expiresAt <= new Date()) {
     await prisma.refreshToken.update({ where: { id: record.id }, data: { revokedAt: new Date() } });
-    const error = new Error(
-      !record.user.isActive
-        ? 'Your account has been deactivated'
-        : 'Refresh token has expired'
-    );
+    const error = new Error('Refresh token has expired');
+    error.statusCode = 401;
+    throw error;
+  }
+  if (!record.user.isActive && record.user.role !== 'VENDOR') {
+    await prisma.refreshToken.update({ where: { id: record.id }, data: { revokedAt: new Date() } });
+    const error = new Error('Your account has been deactivated');
     error.statusCode = 401;
     throw error;
   }

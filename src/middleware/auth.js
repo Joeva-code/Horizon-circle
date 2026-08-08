@@ -34,7 +34,7 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    if (!user.isActive) {
+    if (!user.isActive && user.role !== 'VENDOR') {
       return res.status(401).json({
         success: false,
         message: "Your account has been deactivated",

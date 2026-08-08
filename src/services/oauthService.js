@@ -96,7 +96,7 @@ export const findOrCreateGoogleUser = async (googleUser, role = 'PLANNER') => {
 export const authenticateGoogleCredential = async (credential, role) => {
   const googleUser = await verifyGoogleCredential(credential);
   const user = await findOrCreateGoogleUser(googleUser, role);
-  if (!user.isActive) {
+  if (!user.isActive && user.role !== 'VENDOR') {
     const error = new Error('Your account has been deactivated');
     error.statusCode = 401;
     throw error;
