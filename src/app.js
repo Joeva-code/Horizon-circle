@@ -29,7 +29,7 @@ const app = express();
 const defaultAllowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
-  'http://localhost:5173',
+  'http://localhost:5000',
 
   // EventConnect Vercel frontend
   'https://event-connect-frontend-nine.vercel.app',

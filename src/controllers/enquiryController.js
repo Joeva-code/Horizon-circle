@@ -1,6 +1,5 @@
 import { prisma } from '../config/database.js';
 import { ensureChatRoomForEnquiry } from '../services/chatService.js';
-import { isAvailableOn } from '../services/availabilityService.js';
 
 const personSelect = {
   id: true,
@@ -56,21 +55,19 @@ export const createEnquiry = async (req, res) => {
       specialNotes
     } = req.body;
 
-    const vendorProfile = await prisma.vendorProfile.findUnique({
+    let vendorProfile = await prisma.vendorProfile.findUnique({
       where: { userId: vendorId }
     });
 
-    if (!vendorProfile || !vendorProfile.isPublished) {
-      return res.status(404).json({
-        success: false,
-        message: 'Vendor not available'
-      });
-    }
-
-    if (!isAvailableOn(vendorProfile.availability, eventDate)) {
-      return res.status(409).json({
-        success: false,
-        message: 'This vendor is not available on the selected date'
+    if (!vendorProfile) {
+      vendorProfile = await prisma.vendorProfile.create({
+        data: {
+          userId: vendorId,
+          businessName: '',
+          category: '',
+          location: '',
+          isPublished: false
+        }
       });
     }
 

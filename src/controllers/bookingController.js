@@ -1,6 +1,5 @@
 import { prisma } from '../config/database.js';
 import { ensureChatRoomForBooking } from '../services/chatService.js';
-import { isAvailableOn } from '../services/availabilityService.js';
 
 const bookingInclude = {
   planner: {
@@ -72,7 +71,7 @@ const paginateBookings = async ({ where, page, limit }) => {
 };
 
 const findAvailableVendorProfile = async (vendorId) => {
-  return prisma.vendorProfile.findFirst({
+  let vendorProfile = await prisma.vendorProfile.findFirst({
     where: {
       userId: vendorId,
       user: {
@@ -80,6 +79,20 @@ const findAvailableVendorProfile = async (vendorId) => {
       }
     }
   });
+
+  if (!vendorProfile) {
+    vendorProfile = await prisma.vendorProfile.create({
+      data: {
+        userId: vendorId,
+        businessName: '',
+        category: '',
+        location: '',
+        isPublished: false
+      }
+    });
+  }
+
+  return vendorProfile;
 };
 
 const acceptBookingById = async ({ bookingId, vendorId }) => {
@@ -173,20 +186,6 @@ export const bookVendor = async (req, res) => {
 
       const vendorProfile = await findAvailableVendorProfile(enquiry.vendorId);
 
-      if (!vendorProfile) {
-        return res.status(404).json({
-          success: false,
-          message: 'Vendor not available'
-        });
-      }
-
-      if (!isAvailableOn(vendorProfile.availability, enquiry.eventDate)) {
-        return res.status(409).json({
-          success: false,
-          message: 'This vendor is not available on the selected date'
-        });
-      }
-
       const bookingRequest = await prisma.enquiry.update({
         where: { id: enquiry.id },
         data: {
@@ -207,20 +206,6 @@ export const bookVendor = async (req, res) => {
     }
 
     const vendorProfile = await findAvailableVendorProfile(vendorId);
-
-    if (!vendorProfile) {
-      return res.status(404).json({
-        success: false,
-        message: 'Vendor not available'
-      });
-    }
-
-    if (!isAvailableOn(vendorProfile.availability, eventDate)) {
-      return res.status(409).json({
-        success: false,
-        message: 'This vendor is not available on the selected date'
-      });
-    }
 
     const bookingRequest = await prisma.$transaction(async (tx) => {
       const existingBooking = await tx.enquiry.findFirst({

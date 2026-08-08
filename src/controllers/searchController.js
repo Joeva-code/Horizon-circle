@@ -278,7 +278,7 @@ export const getVendorAvailability = async (req, res) => {
     });
 
     if (!vendor) {
-      return res.status(404).json({ success: false, message: 'Vendor not available' });
+      return res.status(200).json({ success: true, data: { unavailableDates: [] } });
     }
 
     return res.status(200).json({ success: true, data: normalizeAvailability(vendor.availability) });
