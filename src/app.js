@@ -14,6 +14,7 @@ import bookingRoutes from './routes/bookingRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import plannerRoutes from './routes/plannerRoutes.js';
+import portfolioRoutes from './routes/portfolioRoutes.js';
 import { uploadAvatar } from './controllers/authController.js';
 import { protect } from './middleware/auth.js';
 import upload from './middleware/upload.js';
@@ -21,6 +22,8 @@ import upload from './middleware/upload.js';
 dotenv.config();
 
 const app = express();
+
+app.set('trust proxy', 1);
 
 /* =========================
    CORS CONFIGURATION
@@ -186,6 +189,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/planner', plannerRoutes);
+app.use('/api', portfolioRoutes);
 
 /* =========================
    404 HANDLER
