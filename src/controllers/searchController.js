@@ -93,6 +93,9 @@ export const searchVendors = async (req, res) => {
             email: true,
             isVerified: true
           }
+        },
+        portfolioItems: {
+          orderBy: { sortOrder: 'asc' }
         }
       }
     });
@@ -182,6 +185,9 @@ export const getVendorById = async (req, res) => {
             isVerified: true,
             createdAt: true
           }
+        },
+        portfolioItems: {
+          orderBy: { sortOrder: 'asc' }
         },
         reviews: {
           orderBy: { createdAt: 'desc' },

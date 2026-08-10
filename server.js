@@ -1,10 +1,14 @@
 import dotenv from 'dotenv';
 import app from './src/app.js';
 import { connectDB, disconnectDB } from './src/config/database.js';
+import { validateEnv } from './src/config/env.js';
 import { startEmailQueueWorker } from './src/services/emailJobService.js';
 import { initializeSocket } from './src/chat/socket.js';
 
 dotenv.config();
+
+// Validate environment variables
+validateEnv();
 
 const PORT = process.env.PORT || 5000;
 

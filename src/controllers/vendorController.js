@@ -68,6 +68,9 @@ export const getProfile = async (req, res) => {
             firstName: true,
             lastName: true
           }
+        },
+        portfolioItems: {
+          orderBy: { sortOrder: 'asc' }
         }
       }
     });

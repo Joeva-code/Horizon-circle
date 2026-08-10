@@ -181,3 +181,39 @@ export const reviewValidation = {
     body('review').notEmpty().isLength({ min: 3 }).withMessage('Review must be at least 3 characters')
   ]
 };
+
+export const eventValidation = {
+  createEvent: [
+    body('name').notEmpty().withMessage('Event name is required').isString().isLength({ max: 200 }).withMessage('Event name must be at most 200 characters'),
+    body('eventType').notEmpty().withMessage('Event type is required').isString().isLength({ max: 100 }).withMessage('Event type must be at most 100 characters'),
+    body('eventDate').isISO8601().toDate().withMessage('Invalid event date format'),
+    body('location').notEmpty().withMessage('Location is required').isString().isLength({ max: 300 }).withMessage('Location must be at most 300 characters'),
+    body('guestCount').isInt({ min: 1 }).withMessage('Guest count must be at least 1'),
+    body('description').optional().isString().isLength({ max: 5000 }).withMessage('Description must be at most 5,000 characters')
+  ],
+  updateEvent: [
+    body('name').optional().isString().isLength({ max: 200 }).withMessage('Event name must be at most 200 characters'),
+    body('eventType').optional().isString().isLength({ max: 100 }).withMessage('Event type must be at most 100 characters'),
+    body('eventDate').optional().isISO8601().toDate().withMessage('Invalid event date format'),
+    body('location').optional().isString().isLength({ max: 300 }).withMessage('Location must be at most 300 characters'),
+    body('guestCount').optional().isInt({ min: 1 }).withMessage('Guest count must be at least 1'),
+    body('description').optional().isString().isLength({ max: 5000 }).withMessage('Description must be at most 5,000 characters'),
+    body('status').optional().isIn(['DRAFT', 'READY', 'LAUNCHED', 'COMPLETED', 'CANCELLED']).withMessage('Invalid event status')
+  ],
+  listEvents: [
+    query('status').optional().isIn(['DRAFT', 'READY', 'LAUNCHED', 'COMPLETED', 'CANCELLED']).withMessage('Invalid event status filter'),
+    query('page').optional().isInt({ min: 1 }).toInt().withMessage('Page must be at least 1'),
+    query('limit').optional().isInt({ min: 1, max: 100 }).toInt().withMessage('Limit must be between 1 and 100')
+  ],
+  eventId: [
+    param('id').isUUID().withMessage('Invalid event ID')
+  ],
+  vendorId: [
+    param('vendorId').isUUID().withMessage('Invalid vendor ID')
+  ],
+  addVendor: [
+    body('vendorId').isUUID().withMessage('Invalid vendor ID'),
+    body('enquiryId').optional().isUUID().withMessage('Invalid enquiry ID')
+  ]
+};
+

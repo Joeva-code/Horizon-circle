@@ -15,6 +15,7 @@ import chatRoutes from './routes/chatRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import plannerRoutes from './routes/plannerRoutes.js';
 import portfolioRoutes from './routes/portfolioRoutes.js';
+import eventRoutes from './routes/eventRoutes.js';
 import { uploadAvatar } from './controllers/authController.js';
 import { protect } from './middleware/auth.js';
 import upload from './middleware/upload.js';
@@ -190,6 +191,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/planner', plannerRoutes);
 app.use('/api', portfolioRoutes);
+app.use('/api/events', eventRoutes);
 
 /* =========================
    404 HANDLER
