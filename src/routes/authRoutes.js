@@ -1,5 +1,5 @@
 import express from 'express';
-import { signup, login, getMe, uploadAvatar, forgotPassword, resetPassword, resendVerification, verifyEmail, refresh, logout } from '../controllers/authController.js';
+import { signup, login, getMe, uploadAvatar, forgotPassword, resetPassword, refresh, logout } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
 import upload from '../middleware/upload.js';
 import { validate, authValidation } from '../middleware/validation.js';
@@ -12,8 +12,6 @@ router.post(['/signup', '/register'], validate(authValidation.signup), signup);
 router.post('/login', validate(authValidation.login), login);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
-router.get('/verify-email', verifyEmail);
-router.post('/resend-verification', resendVerification);
 // Google sign-in is temporarily disabled
 // router.post('/google', googleLogin);
 router.post('/refresh', refresh);

@@ -19,30 +19,18 @@ const transporter = () => nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: Number(process.env.SMTP_PORT || 465),
   secure: String(process.env.SMTP_SECURE || 'true') === 'true',
-  // Many hosting providers do not provide IPv6 egress. Gmail may resolve to an
-  // IPv6 address first, so force IPv4 to keep verification delivery reliable.
   family: 4,
   auth: { user: required('SMTP_USER'), pass: required('SMTP_PASS') }
+});
+
+const send = async ({ to, subject, text, html }) => transporter().sendMail({
+  from: process.env.EMAIL_FROM || required('SMTP_USER'), to, subject, text, html
 });
 
 const link = (baseUrl, token) => {
   const url = new URL(baseUrl);
   url.searchParams.set('token', token);
   return url.toString();
-};
-
-const send = async ({ to, subject, text, html }) => transporter().sendMail({
-  from: process.env.EMAIL_FROM || required('SMTP_USER'), to, subject, text, html
-});
-
-export const sendVerificationEmail = ({ email, firstName, token }) => {
-  const url = link(process.env.EMAIL_VERIFICATION_URL || 'http://localhost:5000/api/auth/verify-email', token);
-  return send({
-    to: email,
-    subject: 'Verify your EventConnect email address',
-    text: `Hello ${firstName || ''}, verify your email address: ${url}`,
-    html: `<p>Hello ${firstName || ''},</p><p>Please <a href="${url}">verify your EventConnect email address</a>. This link expires in 24 hours.</p>`
-  });
 };
 
 export const sendPasswordResetEmail = ({ email, firstName, token }) => {

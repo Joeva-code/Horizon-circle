@@ -3,7 +3,6 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { clearRefreshCookie, getRefreshToken, issueTokenPair, revokeRefreshToken, rotateRefreshToken, setRefreshCookie, toPublicUser } from '../services/authService.js';
 import { ensureEmailConfigured, sendPasswordResetEmail } from '../services/emailService.js';
-import { enqueueVerificationEmail } from '../services/emailJobService.js';
 
 const tokenHash = (token) => crypto.createHash('sha256').update(token).digest('hex');
 const newEmailToken = () => crypto.randomBytes(32).toString('hex');
@@ -32,7 +31,6 @@ export const signup = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const verificationToken = newEmailToken();
     const user = await prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
         data: {
@@ -41,9 +39,7 @@ export const signup = async (req, res) => {
           firstName,
           lastName,
           role: accountType,
-          termsAcceptedAt: new Date(),
-          emailVerificationToken: tokenHash(verificationToken),
-          emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
+          termsAcceptedAt: new Date()
         }
       });
       if (createdUser.role === 'VENDOR') {
@@ -51,15 +47,12 @@ export const signup = async (req, res) => {
       } else {
         await tx.plannerProfile.create({ data: { userId: createdUser.id } });
       }
-      await enqueueVerificationEmail(tx, { user: createdUser, token: verificationToken });
       return createdUser;
     });
 
-    // Registration does not create a session. Users can sign in immediately;
-    // the client can use isVerified to prompt them to verify their email.
-    res.status(202).json({
+    res.status(201).json({
       success: true,
-      message: 'Signup successful; check your email.',
+      message: 'Account created successfully',
       data: toPublicUser(user)
     });
 
@@ -304,42 +297,6 @@ export const resetPassword = async (req, res) => {
   } catch (error) {
     console.error('Reset password error:', error);
     res.status(error.statusCode || 500).json({ success: false, message: error.message || 'Unable to reset password' });
-  }
-};
-
-// @desc    Verify an email from the one-time verification link
-// @route   GET /api/auth/verify-email?token=...
-export const verifyEmail = async (req, res) => {
-  try {
-    const { token } = req.query;
-    if (typeof token !== 'string' || !token) return res.status(400).json({ success: false, message: 'Verification token is required' });
-    const user = await prisma.user.findFirst({ where: { emailVerificationToken: tokenHash(token), emailVerificationExpires: { gt: new Date() } } });
-    if (!user) return res.status(400).json({ success: false, message: 'Verification link is invalid or expired' });
-    await prisma.user.update({ where: { id: user.id }, data: { isVerified: true, emailVerificationToken: null, emailVerificationExpires: null } });
-    res.status(200).json({ success: true, message: 'Email verified successfully. You can now sign in.' });
-  } catch (error) {
-    console.error('Email verification error:', error);
-    res.status(500).json({ success: false, message: 'Unable to verify email' });
-  }
-};
-
-// @desc    Send a replacement email-verification link
-// @route   POST /api/auth/resend-verification
-export const resendVerification = async (req, res) => {
-  try {
-    const { email } = req.body;
-    const user = typeof email === 'string' ? await prisma.user.findUnique({ where: { email: email.toLowerCase() } }) : null;
-    if (user && !user.isVerified) {
-      const verificationToken = newEmailToken();
-      await prisma.$transaction(async (tx) => {
-        const updatedUser = await tx.user.update({ where: { id: user.id }, data: { emailVerificationToken: tokenHash(verificationToken), emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) } });
-        await enqueueVerificationEmail(tx, { user: updatedUser, token: verificationToken });
-      });
-    }
-    res.status(200).json({ success: true, message: 'If the account needs verification, a link has been sent.' });
-  } catch (error) {
-    console.error('Resend verification error:', error);
-    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'Unable to send verification email' });
   }
 };
 

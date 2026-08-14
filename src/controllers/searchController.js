@@ -23,7 +23,8 @@ export const searchVendors = async (req, res) => {
       user: {
         role: 'VENDOR',
         isActive: true
-      }
+      },
+      isPublished: true
     };
 
     // Category filter
