@@ -3,8 +3,6 @@ import {
   createOrUpdateProfile,
   getProfile,
   uploadProfileImage,
-  uploadPortfolioImages,
-  removePortfolioImage,
   getDashboard,
   updateAvailability,
   getVendorStats
@@ -33,19 +31,6 @@ router.post(
   '/profile/image',
   upload.single('image'),
   uploadProfileImage
-);
-
-// Upload portfolio images
-router.post(
-  '/profile/portfolio',
-  upload.array('images', 10),
-  uploadPortfolioImages
-);
-
-// Delete portfolio image
-router.delete(
-  '/profile/portfolio/:index',
-  removePortfolioImage
 );
 
 // Dashboard

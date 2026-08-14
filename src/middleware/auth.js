@@ -28,6 +28,12 @@ export const protect = async (req, res, next) => {
     });
 
     if (!user) {
+      console.warn('[auth] Token valid but user not found', {
+        tokenUserId: decoded.id,
+        tokenRole: decoded.role,
+        endpoint: req.originalUrl,
+        method: req.method,
+      });
       return res.status(401).json({
         success: false,
         message: "User not found",
@@ -70,7 +76,26 @@ export const protect = async (req, res, next) => {
 
 export const restrictTo = (...roles) => {
   return (req, res, next) => {
+    if (!req.user) {
+      console.warn('[auth] restrictTo called without authenticated user', {
+        endpoint: req.originalUrl,
+        method: req.method,
+        requiredRoles: roles,
+      });
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized to access this route",
+      });
+    }
+
     if (!roles.includes(req.user.role)) {
+      console.warn('[auth] Authorization denied', {
+        userId: req.user.id,
+        userRole: req.user.role,
+        requiredRoles: roles,
+        endpoint: req.originalUrl,
+        method: req.method,
+      });
       return res.status(403).json({
         success: false,
         message: "You do not have permission to perform this action",

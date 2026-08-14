@@ -348,9 +348,13 @@ export const resendVerification = async (req, res) => {
 // @access  Public (requires the HTTP-only refresh cookie, or body token for native clients)
 export const refresh = async (req, res) => {
   try {
-    const { accessToken, refreshToken } = await rotateRefreshToken(getRefreshToken(req));
+    const { accessToken, refreshToken, user } = await rotateRefreshToken(getRefreshToken(req));
     setRefreshCookie(res, refreshToken);
-    res.status(200).json({ success: true, token: accessToken });
+    res.status(200).json({
+      success: true,
+      token: accessToken,
+      data: toPublicUser(user),
+    });
   } catch (error) {
     clearRefreshCookie(res);
     res.status(error.statusCode || 500).json({ success: false, message: error.message || 'Unable to refresh token' });

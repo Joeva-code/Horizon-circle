@@ -71,7 +71,7 @@ const paginateBookings = async ({ where, page, limit }) => {
 };
 
 const findAvailableVendorProfile = async (vendorId) => {
-  let vendorProfile = await prisma.vendorProfile.findFirst({
+  const vendorProfile = await prisma.vendorProfile.findFirst({
     where: {
       userId: vendorId,
       user: {
@@ -81,7 +81,16 @@ const findAvailableVendorProfile = async (vendorId) => {
   });
 
   if (!vendorProfile) {
-    vendorProfile = await prisma.vendorProfile.create({
+    const vendorUser = await prisma.user.findUnique({
+      where: { id: vendorId },
+      select: { id: true, role: true }
+    });
+
+    if (!vendorUser || vendorUser.role !== 'VENDOR') {
+      throw Object.assign(new Error('Invalid vendor selection'), { statusCode: 422 });
+    }
+
+    return prisma.vendorProfile.create({
       data: {
         userId: vendorId,
         businessName: '',

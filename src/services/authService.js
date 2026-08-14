@@ -81,7 +81,8 @@ export const rotateRefreshToken = async (rawToken) => {
 
   return prisma.$transaction(async (tx) => {
     await tx.refreshToken.update({ where: { id: record.id }, data: { revokedAt: new Date() } });
-    return createTokenPair(record.user, tx);
+    const pair = await createTokenPair(record.user, tx);
+    return { ...pair, user: record.user };
   });
 };
 
