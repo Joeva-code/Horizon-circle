@@ -36,7 +36,8 @@ export const createEvent = async (plannerId, eventData) => {
     return { success: true, data: event };
   } catch (error) {
     console.error('Create event error:', error);
-    return { success: false, message: 'Failed to create event' };
+    const message = error instanceof Error ? error.message : 'Failed to create event';
+    return { success: false, message, status: 400 };
   }
 };
 

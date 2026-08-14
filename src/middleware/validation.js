@@ -188,7 +188,7 @@ export const eventValidation = {
     body('eventType').notEmpty().withMessage('Event type is required').isString().isLength({ max: 100 }).withMessage('Event type must be at most 100 characters'),
     body('eventDate').isISO8601().toDate().withMessage('Invalid event date format'),
     body('location').notEmpty().withMessage('Location is required').isString().isLength({ max: 300 }).withMessage('Location must be at most 300 characters'),
-    body('guestCount').isInt({ min: 1 }).withMessage('Guest count must be at least 1'),
+    body('guestCount').isInt({ min: 1 }).toInt().withMessage('Guest count must be at least 1'),
     body('description').optional().isString().isLength({ max: 5000 }).withMessage('Description must be at most 5,000 characters')
   ],
   updateEvent: [
@@ -196,7 +196,7 @@ export const eventValidation = {
     body('eventType').optional().isString().isLength({ max: 100 }).withMessage('Event type must be at most 100 characters'),
     body('eventDate').optional().isISO8601().toDate().withMessage('Invalid event date format'),
     body('location').optional().isString().isLength({ max: 300 }).withMessage('Location must be at most 300 characters'),
-    body('guestCount').optional().isInt({ min: 1 }).withMessage('Guest count must be at least 1'),
+    body('guestCount').optional().isInt({ min: 1 }).toInt().withMessage('Guest count must be at least 1'),
     body('description').optional().isString().isLength({ max: 5000 }).withMessage('Description must be at most 5,000 characters'),
     body('status').optional().isIn(['DRAFT', 'READY', 'LAUNCHED', 'COMPLETED', 'CANCELLED']).withMessage('Invalid event status')
   ],
