@@ -45,7 +45,6 @@ model User {
   reviews            Review[] @relation("PlannerReviews")
   vendorReviews      Review[] @relation("VendorReviews")
   refreshTokens      RefreshToken[]
-  emailJobs          EmailJob[]
   plannerChatRooms   ChatRoom[] @relation("PlannerChatRooms")
   vendorChatRooms    ChatRoom[] @relation("VendorChatRooms")
   sentChatMessages   ChatMessage[] @relation("SentChatMessages")
@@ -53,26 +52,6 @@ model User {
 
   @@unique([provider, providerId])
   @@map("users")
-}
-
-model EmailJob {
-  id          String          @id @default(uuid())
-  type        EmailJobType
-  status      EmailJobStatus  @default(PENDING)
-  userId      String
-  payload     Json
-  attempts    Int             @default(0)
-  runAt       DateTime        @default(now())
-  lockedAt    DateTime?
-  lastError   String?
-  sentAt      DateTime?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([status, runAt])
-  @@index([userId])
-  @@map("email_jobs")
 }
 
 model RefreshToken {
@@ -380,15 +359,4 @@ enum EnquiryStatus {
   RESPONDED
   DECLINED
   BOOKED
-}
-
-enum EmailJobType {
-  VERIFICATION
-}
-
-enum EmailJobStatus {
-  PENDING
-  PROCESSING
-  SENT
-  FAILED
 }
