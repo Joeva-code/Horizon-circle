@@ -36,7 +36,7 @@ export const createOrUpdateProfile = async (req, res) => {
         location: location || profile.location,
         priceRange: priceRange !== undefined ? priceRange : profile.priceRange,
         availability: availability || profile.availability,
-        isPublished: businessName && category && location ? true : profile.isPublished
+        isPublished: true
       }
     });
 

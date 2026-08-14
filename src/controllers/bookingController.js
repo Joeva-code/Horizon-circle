@@ -96,7 +96,7 @@ const findAvailableVendorProfile = async (vendorId) => {
         businessName: '',
         category: '',
         location: '',
-        isPublished: false
+        isPublished: true
       }
     });
   }

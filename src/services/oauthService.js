@@ -77,7 +77,7 @@ export const findOrCreateGoogleUser = async (googleUser, role = 'PLANNER') => {
     });
     if (role === 'VENDOR') {
       await prisma.vendorProfile.create({
-        data: { userId: user.id, businessName: '', category: '', location: '', isPublished: false }
+        data: { userId: user.id, businessName: '', category: '', location: '', isPublished: true }
       });
     }
     return user;

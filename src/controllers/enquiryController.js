@@ -66,7 +66,7 @@ export const createEnquiry = async (req, res) => {
           businessName: '',
           category: '',
           location: '',
-          isPublished: false
+          isPublished: true
         }
       });
     }

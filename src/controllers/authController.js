@@ -43,7 +43,7 @@ export const signup = async (req, res) => {
         }
       });
       if (createdUser.role === 'VENDOR') {
-        await tx.vendorProfile.create({ data: { userId: createdUser.id, businessName: '', category: '', location: '', isPublished: false } });
+        await tx.vendorProfile.create({ data: { userId: createdUser.id, businessName: '', category: '', location: '', isPublished: true } });
       } else {
         await tx.plannerProfile.create({ data: { userId: createdUser.id } });
       }

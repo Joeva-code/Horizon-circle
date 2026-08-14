@@ -78,7 +78,7 @@ model VendorProfile {
   priceRange        String?
   availability      Json?           @default("{}")
   profileImage      String?
-  isPublished       Boolean         @default(false)
+  isPublished       Boolean         @default(true)
   responseRate      Decimal?        @default(0)
   responseTime      Int?            @default(0)
   totalEnquiries    Int?            @default(0)
