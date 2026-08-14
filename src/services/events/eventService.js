@@ -14,9 +14,10 @@ import * as maxifyService from '../maxify/maxifyService.js';
  */
 export const createEvent = async (plannerId, eventData) => {
   try {
+    const { plannerId: _plannerId, ...sanitizedEventData } = eventData;
     const event = await prisma.event.create({
       data: {
-        ...eventData,
+        ...sanitizedEventData,
         plannerId,
         status: 'DRAFT',
         readinessScore: 0,

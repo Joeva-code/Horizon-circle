@@ -59,12 +59,8 @@ export const searchVendors = async (req, res) => {
 
     // Price range filter
     if (minBudget || maxBudget) {
-      // For price range, we'll filter after query since priceRange is stored as string
-      // We'll handle this in memory for MVP
+      // Budget filtering is handled in memory after querying
     }
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const take = parseInt(limit);
 
     // Build order object
     let orderBy = {};
@@ -78,12 +74,14 @@ export const searchVendors = async (req, res) => {
       orderBy = { [sortBy]: sortOrder };
     }
 
-    // Get vendors
-    const vendors = await prisma.vendorProfile.findMany({
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
+
+    // Get all matching vendors (budget filtering must happen before pagination
+    // because priceRange is stored as a string and cannot be filtered in Prisma)
+    const allVendors = await prisma.vendorProfile.findMany({
       where: whereClause,
       orderBy,
-      skip,
-      take,
       include: {
         user: {
           select: {
@@ -100,22 +98,14 @@ export const searchVendors = async (req, res) => {
       }
     });
 
-    // Get total count
-    const total = await prisma.vendorProfile.count({
-      where: whereClause
-    });
-
-    // If budget filters are provided, filter in memory
-    let filteredVendors = vendors;
+    let filteredVendors = allVendors;
     if (minBudget || maxBudget) {
-      filteredVendors = vendors.filter(vendor => {
+      filteredVendors = allVendors.filter(vendor => {
         if (!vendor.priceRange) return true;
-        // Parse price range (e.g., "₦50,000 - ₦100,000" or "₦50,000+")
         const priceStr = vendor.priceRange.replace(/[₦,]/g, '').trim();
         const parts = priceStr.split('-').map(p => parseInt(p.trim()));
         
         if (parts.length === 1) {
-          // Single price or "X+"
           const price = parseInt(parts[0]);
           if (minBudget && price < parseInt(minBudget)) return false;
           if (maxBudget && price > parseInt(maxBudget)) return false;
@@ -131,7 +121,6 @@ export const searchVendors = async (req, res) => {
       });
     }
 
-    // If date filter is provided, check availability
     if (date) {
       const eventDate = new Date(date);
       filteredVendors = filteredVendors.filter(vendor => {
@@ -139,10 +128,13 @@ export const searchVendors = async (req, res) => {
       });
     }
 
+    const total = filteredVendors.length;
+    const paginatedVendors = filteredVendors.slice(skip, skip + take);
+
     res.status(200).json({
       success: true,
       data: {
-        vendors: filteredVendors,
+        vendors: paginatedVendors,
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
@@ -274,7 +266,7 @@ export const getVendorAvailability = async (req, res) => {
   try {
     const vendor = await prisma.vendorProfile.findFirst({
       where: {
-        userId: req.params.id,
+        id: req.params.id,
         user: {
           role: 'VENDOR',
           isActive: true
