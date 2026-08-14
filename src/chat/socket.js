@@ -8,8 +8,9 @@ export const initializeSocket = (httpServer) => {
     cors: {
       origin: [
         'http://localhost:3000',
-        'http://localhost:5173',
-        'https://orange-herizon-circle-a7pj-delta.vercel.app'
+        'http://localhost:3001',
+        'http://localhost:5000',
+        'https://event-connect-frontend-nine.vercel.app'
       ],
       credentials: true
     }
@@ -30,6 +31,10 @@ export const initializeSocket = (httpServer) => {
 
       if (!user) {
         return next(new Error('Authentication error: user not found'));
+      }
+
+      if (!user.isActive && user.role !== 'VENDOR') {
+        return next(new Error('Authentication error: account deactivated'));
       }
 
       socket.user = user;

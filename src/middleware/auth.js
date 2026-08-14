@@ -82,9 +82,9 @@ export const restrictTo = (...roles) => {
         method: req.method,
         requiredRoles: roles,
       });
-      return res.status(401).json({
+      return res.status(403).json({
         success: false,
-        message: "Not authorized to access this route",
+        message: "You do not have permission to perform this action",
       });
     }
 

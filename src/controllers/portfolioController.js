@@ -10,13 +10,16 @@ export const getVendorPortfolio = async (req, res) => {
     const vendorProfile = await prisma.vendorProfile.findUnique({
       where: { userId: vendorId },
       include: {
+        user: {
+          select: { isActive: true }
+        },
         portfolioItems: {
           orderBy: { sortOrder: 'asc' }
         }
       }
     });
 
-    if (!vendorProfile) {
+    if (!vendorProfile || !vendorProfile.user?.isActive || !vendorProfile.isPublished) {
       return res.status(404).json({
         success: false,
         message: 'Vendor profile not found'

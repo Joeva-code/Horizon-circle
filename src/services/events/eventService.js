@@ -50,9 +50,7 @@ export const getEventById = async (eventId, userId) => {
     const event = await prisma.event.findFirst({
       where: {
         id: eventId,
-        OR: [
-          { plannerId: userId },
-        ],
+        plannerId: userId,
       },
       include: {
         planner: {

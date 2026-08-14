@@ -96,7 +96,7 @@ const cookieOptions = () => {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production' || sameSite === 'none',
     sameSite: ['lax', 'strict', 'none'].includes(sameSite) ? sameSite : 'lax',
-    path: '/api/auth',
+    path: '/',
     maxAge: durationMs(process.env.REFRESH_TOKEN_EXPIRE || '30d')
   };
 };
