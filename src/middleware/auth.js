@@ -47,13 +47,6 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    if (!user.isVerified) {
-      return res.status(403).json({
-        success: false,
-        message: "Please verify your email before continuing",
-      });
-    }
-
     req.user = user;
 
     next();

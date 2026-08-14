@@ -3,7 +3,6 @@ import { signup, login, getMe, uploadAvatar, forgotPassword, resetPassword, rese
 import { protect } from '../middleware/auth.js';
 import upload from '../middleware/upload.js';
 import { validate, authValidation } from '../middleware/validation.js';
-import { googleLogin } from "../controllers/oauthController.js";
 
 const router = express.Router();
 
@@ -15,7 +14,8 @@ router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.get('/verify-email', verifyEmail);
 router.post('/resend-verification', resendVerification);
-router.post('/google', googleLogin);
+// Google sign-in is temporarily disabled
+// router.post('/google', googleLogin);
 router.post('/refresh', refresh);
 router.post('/logout', logout);
 router.get('/me', protect, getMe);

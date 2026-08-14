@@ -103,14 +103,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // Check if email is verified
-    if (!user.isVerified) {
-      return res.status(403).json({
-        success: false,
-        message: 'Please verify your email before logging in'
-      });
-    }
-
     // Verify password
     const isPasswordMatch = user.password && await bcrypt.compare(password, user.password);
 

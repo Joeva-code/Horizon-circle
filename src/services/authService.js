@@ -78,13 +78,6 @@ export const rotateRefreshToken = async (rawToken) => {
     error.statusCode = 401;
     throw error;
   }
-  if (!record.user.isVerified) {
-    await prisma.refreshToken.update({ where: { id: record.id }, data: { revokedAt: new Date() } });
-    const error = new Error('Please verify your email before continuing');
-    error.statusCode = 403;
-    throw error;
-  }
-
   return prisma.$transaction(async (tx) => {
     await tx.refreshToken.update({ where: { id: record.id }, data: { revokedAt: new Date() } });
     const pair = await createTokenPair(record.user, tx);
