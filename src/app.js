@@ -36,10 +36,9 @@ const defaultAllowedOrigins = [
   'http://localhost:5000',
 
   // EventConnect Vercel frontend
-  'https://event-connect-frontend-nine.vercel.app',
+  'https://event-connect-frontend-nine.vercel.app'
 
-  // Horizon Circle Vercel frontend
-  'https://orange-herizon-circle-a7pj-delta.vercel.app'
+
 ];
 
 const configuredOrigins = (process.env.CORS_ORIGIN || '')
