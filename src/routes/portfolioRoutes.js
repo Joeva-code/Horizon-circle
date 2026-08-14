@@ -16,8 +16,7 @@ const router = express.Router();
 router.get('/vendors/:vendorId/portfolio', getVendorPortfolio);
 
 // Protected vendor portfolio endpoints
-router.use(protect);
-router.use(restrictTo("VENDOR"));
+router.use('/portfolio', protect, restrictTo("VENDOR"));
 
 router.get('/portfolio', getMyPortfolio);
 router.post('/portfolio', upload.single('media'), createPortfolioItem);
