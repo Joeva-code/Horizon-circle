@@ -22,11 +22,9 @@ import { eventValidation, validate } from '../middleware/validation.js';
 
 const router = express.Router();
 
-// All routes require authentication
 router.use(protect);
 router.use(restrictTo('PLANNER'));
 
-// Event CRUD
 router.post('/', validate(eventValidation.createEvent), createEvent);
 router.get('/', validate(eventValidation.listEvents), listEvents);
 router.get('/:id', validate(eventValidation.eventId), getEvent);
