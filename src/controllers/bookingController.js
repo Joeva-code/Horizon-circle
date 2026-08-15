@@ -207,10 +207,16 @@ export const bookVendor = async (req, res) => {
         include: bookingInclude
       });
 
+      const chatRoom = await ensureChatRoomForBooking(prisma, {
+        plannerId: bookingRequest.plannerId,
+        vendorId: bookingRequest.vendorId,
+        enquiryId: bookingRequest.id
+      });
+
       return res.status(200).json({
         success: true,
         message: 'Booking request sent successfully',
-        data: bookingRequest
+        data: { ...bookingRequest, chatRoom }
       });
     }
 
@@ -279,6 +285,12 @@ export const bookVendor = async (req, res) => {
           enquiryCount: { increment: 1 },
           totalEnquiries: { increment: 1 }
         }
+      });
+
+      const chatRoom = await ensureChatRoomForBooking(tx, {
+        plannerId: created.plannerId,
+        vendorId: created.vendorId,
+        enquiryId: created.id
       });
 
       return tx.enquiry.findUnique({

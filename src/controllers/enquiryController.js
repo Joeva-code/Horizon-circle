@@ -1,5 +1,5 @@
 import { prisma } from '../config/database.js';
-import { ensureChatRoomForEnquiry } from '../services/chatService.js';
+import { ensureChatRoomForEnquiry, ensureChatRoomForBooking } from '../services/chatService.js';
 
 const personSelect = {
   id: true,
@@ -375,7 +375,12 @@ export const openEnquiryChat = async (req, res) => {
       });
     }
 
-    if (!['RESPONDED', 'BOOKED'].includes(enquiry.status)) {
+    const allowedStatuses = ['RESPONDED', 'BOOKED'];
+    if (enquiry.isBookingRequest && enquiry.status === 'NEW') {
+      allowedStatuses.push('NEW');
+    }
+
+    if (!allowedStatuses.includes(enquiry.status)) {
       return res.status(400).json({
         success: false,
         message: 'Chat opens after the vendor accepts the enquiry'
@@ -383,6 +388,13 @@ export const openEnquiryChat = async (req, res) => {
     }
 
     const room = enquiry.chatRoom ?? await prisma.$transaction((tx) => {
+      if (enquiry.isBookingRequest) {
+        return ensureChatRoomForBooking(tx, {
+          plannerId: enquiry.plannerId,
+          vendorId: enquiry.vendorId,
+          enquiryId: enquiry.id
+        });
+      }
       return ensureChatForAcceptedEnquiry(tx, enquiry);
     });
 
