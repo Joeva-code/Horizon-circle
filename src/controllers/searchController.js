@@ -130,17 +130,16 @@ export const searchVendors = async (req, res) => {
     }
 
     const total = filteredVendors.length;
-    const paginatedVendors = filteredVendors.slice(skip, skip + take);
 
     res.status(200).json({
       success: true,
       data: {
-        vendors: paginatedVendors,
+        vendors: filteredVendors,
         pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
+          page: 1,
+          limit: total,
           total,
-          totalPages: Math.ceil(total / parseInt(limit))
+          totalPages: 1
         }
       }
     });
