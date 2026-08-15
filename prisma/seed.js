@@ -13,7 +13,7 @@ async function main() {
       role: 'VENDOR',
       profile: {
         businessName: 'Tunde Photography',
-        category: 'Photographer',
+        category: 'Photography & Video Editing',
         description: 'Professional photographer with 8 years of experience in weddings, corporate events, and portraits.',
         location: 'Lagos, Nigeria',
         priceRange: '₦150,000 - ₦500,000',
@@ -32,7 +32,7 @@ async function main() {
       role: 'VENDOR',
       profile: {
         businessName: "Fatima's Catering",
-        category: 'Caterer',
+        category: 'Catering & Cakes',
         description: 'Over 10 years of experience in catering for weddings, corporate events, and private parties.',
         location: 'Kano, Nigeria',
         priceRange: '₦200,000 - ₦1,000,000',
@@ -50,7 +50,7 @@ async function main() {
       role: 'VENDOR',
       profile: {
         businessName: 'Chidi Events & Decor',
-        category: 'Decorator',
+        category: 'Decoration & Styling',
         description: 'Specializing in wedding decorations, corporate events, and party setups.',
         location: 'Abuja, Nigeria',
         priceRange: '₦100,000 - ₦400,000',
