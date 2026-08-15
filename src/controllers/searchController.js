@@ -24,7 +24,9 @@ export const searchVendors = async (req, res) => {
         role: 'VENDOR',
         isActive: true
       },
-      isPublished: true
+      isPublished: true,
+      businessName: { not: '' },
+      category: { not: '' }
     };
 
     // Category filter
