@@ -36,7 +36,10 @@ const defaultAllowedOrigins = [
   'http://localhost:5000',
 
   // EventConnect Vercel frontend
-  'https://event-connect-frontend-nine.vercel.app'
+    'https://event-connect-frontend-nine.vercel.app',
+    'https://event-connect-frontend-tfok.vercel.app',
+   'https://eventconnect-frontend-7xj0.onrender.com',
+
 
 
 ];
